@@ -1,0 +1,22 @@
+# Xcode
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# XcodeGen-generated project and Info.plist (regenerate via `xcodegen generate` from project.yml)
+*.xcodeproj
+PlacePick/Info.plist
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+
+# Simulator / build products
+*.ipa
+*.dSYM.zip
+*.dSYM
