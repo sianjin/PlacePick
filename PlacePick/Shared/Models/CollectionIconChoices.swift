@@ -13,6 +13,10 @@ enum CollectionIconChoices {
         "pawprint", "heart", "star", "sparkles", "gift",
         "airplane", "car", "train.side.front.car", "map", "flag",
         "sun.max", "moon.stars", "snowflake", "drop", "flame",
-        "book", "gamecontroller", "guitars"
+        "book", "gamecontroller", "guitars",
+        "cross.case", "stethoscope", "wrench.and.screwdriver", "scissors", "fuelpump",
+        "shower", "tent", "tree.circle", "fish", "bird",
+        "sailboat", "ferry", "cablecar", "tram", "bus",
+        "movieclapper", "popcorn", "surfboard"
     ]
 }
