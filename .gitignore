@@ -8,6 +8,7 @@ xcuserdata/
 # XcodeGen-generated project and Info.plist (regenerate via `xcodegen generate` from project.yml)
 *.xcodeproj
 PlacePick/Info.plist
+PlacePickShareExtension/Info.plist
 
 # Swift Package Manager
 .build/

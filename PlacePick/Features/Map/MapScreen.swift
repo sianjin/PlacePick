@@ -8,12 +8,14 @@ struct MapScreen: View {
     @Query(sort: \PlaceCollection.order) private var collections: [PlaceCollection]
 
     @StateObject private var locationAuthorization = LocationAuthorizationService()
+    @EnvironmentObject private var pendingImportCoordinator: PendingImportCoordinator
 
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var selectedCollection: PlaceCollection?
     @State private var selectedPlace: Place?
     @State private var isPresentingAddPlace = false
     @State private var isPresentingManageCollections = false
+    @State private var addPlaceInitialQuery = ""
 
     private let recommendationEngine: RecommendationEngine = DefaultRecommendationEngine()
     private let lastViewport = LastViewportStore()
@@ -68,7 +70,7 @@ struct MapScreen: View {
             .padding()
         }
         .sheet(isPresented: $isPresentingAddPlace) {
-            AddPlaceScreen()
+            AddPlaceScreen(initialQuery: addPlaceInitialQuery)
         }
         .sheet(item: $selectedPlace) { place in
             PlaceDetailSheet(place: place)
@@ -81,6 +83,27 @@ struct MapScreen: View {
             CollectionRepository(modelContext: modelContext).seedSuggestedCollectionsIfNeeded()
             locationAuthorization.requestWhenInUseAuthorizationIfNeeded()
             resolveInitialViewport()
+        }
+        .onChange(of: pendingImportCoordinator.pendingImport) { _, newValue in
+            guard newValue != nil else { return }
+            openAddPlaceFromPendingImport()
+        }
+    }
+
+    /// Every capture path — manual or shared — converges on the same AddPlaceScreen
+    /// (IMPORT_PIPELINE.md "Import Boundary"). The suggested search text is only ever a
+    /// starting point the user can edit or clear; it never bypasses MapKit selection.
+    private func openAddPlaceFromPendingImport() {
+        guard let pendingImport = pendingImportCoordinator.consumePendingImport() else { return }
+        selectedPlace = nil
+        addPlaceInitialQuery = pendingImport.suggestedSearchText ?? ""
+
+        if isPresentingAddPlace {
+            // Force a fresh AddPlaceScreen instance so the new initialQuery actually applies.
+            isPresentingAddPlace = false
+            DispatchQueue.main.async { isPresentingAddPlace = true }
+        } else {
+            isPresentingAddPlace = true
         }
     }
 
@@ -148,4 +171,5 @@ extension Place {
 #Preview {
     MapScreen()
         .modelContainer(for: [Place.self, PlaceCollection.self], inMemory: true)
+        .environmentObject(PendingImportCoordinator())
 }

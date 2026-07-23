@@ -3,6 +3,8 @@ import SwiftData
 
 @main
 struct PlacePickApp: App {
+    @StateObject private var pendingImportCoordinator = PendingImportCoordinator()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([Place.self, PlaceCollection.self])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
@@ -16,6 +18,10 @@ struct PlacePickApp: App {
     var body: some Scene {
         WindowGroup {
             MapScreen()
+                .environmentObject(pendingImportCoordinator)
+                .onOpenURL { url in
+                    pendingImportCoordinator.handleOpenURL(url)
+                }
         }
         .modelContainer(sharedModelContainer)
     }

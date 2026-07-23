@@ -7,10 +7,14 @@ struct AddPlaceScreen: View {
     @Environment(\.dismiss) private var dismiss
 
     @StateObject private var searchService = MapSearchService()
-    @State private var query: String = ""
+    @State private var query: String
     @State private var selectedMapItem: MKMapItem?
     @State private var existingPlace: Place?
     @State private var errorMessage: String?
+
+    init(initialQuery: String = "") {
+        _query = State(initialValue: initialQuery)
+    }
 
     var body: some View {
         NavigationStack {
@@ -40,6 +44,10 @@ struct AddPlaceScreen: View {
             .sheet(item: $existingPlace) { place in
                 PlaceDetailSheet(place: place)
             }
+        }
+        .onAppear {
+            guard !query.isEmpty else { return }
+            searchService.updateQuery(query)
         }
     }
 

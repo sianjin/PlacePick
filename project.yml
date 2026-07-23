@@ -12,6 +12,7 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: PlacePick
+      - path: PlacePickShared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sianjin.PlacePick
@@ -22,11 +23,48 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "PlacePick uses your location to show where you are relative to the places you saved."
         TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_ENTITLEMENTS: PlacePick/PlacePick.entitlements
     info:
       path: PlacePick/Info.plist
       properties:
         UILaunchScreen: {}
         NSLocationWhenInUseUsageDescription: "PlacePick uses your location to show where you are relative to the places you saved."
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - placepick
+            CFBundleURLName: com.sianjin.PlacePick
+    dependencies:
+      - target: PlacePickShareExtension
+        embed: true
+
+  PlacePickShareExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: PlacePickShareExtension
+      - path: PlacePickShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sianjin.PlacePick.ShareExtension
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_ENTITLEMENTS: PlacePickShareExtension/PlacePickShareExtension.entitlements
+        SKIP_INSTALL: true
+    info:
+      path: PlacePickShareExtension/Info.plist
+      properties:
+        CFBundleDisplayName: PlacePick
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsWebPageWithMaxCount: 1
+              NSExtensionActivationSupportsText: true
 
   PlacePickTests:
     type: bundle.unit-test
