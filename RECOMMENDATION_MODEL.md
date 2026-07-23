@@ -1,113 +1,459 @@
 # PlacePick — RECOMMENDATION_MODEL.md
 
-Version: 3.0
+Version: 4.0
+Status: Attention and Recommendation Specification
 
 ---
 
-## 1. Purpose
+# Purpose
 
-Recommendation helps users rediscover places they have already saved.
+This document defines how PlacePick decides which saved Places deserve the user's attention.
 
-It answers:
+Recommendation exists to help users rediscover meaningful Places they have already saved.
 
-> How important is this place to the user right now?
+It answers one question:
 
-The recommendation model produces a continuous **Importance Score** for each saved Place.
+> **Which Places deserve more attention right now?**
 
-It does not decide exactly how the Place should look on the map.
+It does **not** answer:
 
----
+- Which Place is objectively better.
+- Which Place should be visited next.
+- Which Place other users recommend.
+- Which Place is currently popular.
 
-## 2. Core Principle
+Recommendation is entirely personal.
 
-> Recommendation computes importance.  
-> The map renderer decides presentation.
-
-These are separate responsibilities.
-
-The recommendation model must remain:
-
-- Deterministic
-- Explainable
-- Lightweight
-- Local-first
-- Independent of other Places
-- Independent of map density
-- Independent of viewport ranking
+It interprets the user's existing relationship with Places.
 
 ---
 
-## 3. Recommendation Is Not Ranking
+# Relationship to Other Documents
 
-PlacePick does not rank Places against one another.
+This document should be read together with:
 
-A Place's Importance Score depends only on:
+- MVP.md
+- COLLECTIONS.md
+- DATA_MODEL.md
+- UI_STRUCTURE.md
 
-- Its own stored facts
-- Explicit, stable application state
+Responsibilities are divided as follows.
 
-It does not depend on:
+MVP.md defines:
 
-- How many other Places exist
-- How many Places are visible
-- The scores of neighboring Places
-- Top-N selection
-- Percentile ranking
-- Relative competition
+- Product philosophy
+- User experience
+- Core product concepts
 
-Adding another Place must not reduce the Importance Score of an existing Place.
+COLLECTIONS.md defines:
+
+- How users organize their Personal Map
+
+DATA_MODEL.md defines:
+
+- Place Identity
+- Personal Relationship
+- Persistence
+
+This document defines:
+
+- How Personal Relationships become Attention
+- How Importance is computed
+- The boundary between Recommendation and Presentation
+
+UI_STRUCTURE.md defines:
+
+- How Recommendation is visually expressed.
+
+Recommendation never changes the underlying data model.
+
+It only interprets it.
 
 ---
 
-## 4. Continuous Importance Score
+# Attention Model
 
-The recommendation model returns a continuous numeric score.
+Recommendation is an interpretation layer.
 
 Conceptually:
 
 ```text
-Place facts
-    ↓
+Place Identity
+        │
+        ▼
+Personal Relationship
+        │
+        ▼
 Recommendation Model
-    ↓
-Importance Score
+        │
+        ▼
+Importance
+        │
+        ▼
+Presentation
 ```
 
-The model does not return:
+Each layer has a different responsibility.
 
-- Normal
-- Highlighted
-- Featured
-- Top Place
-- Recommended Place
+Place Identity answers:
 
-There are no fixed visual tiers in the recommendation layer.
+> What Place is this?
+
+Personal Relationship answers:
+
+> What does this Place mean to me?
+
+Recommendation answers:
+
+> How much attention does this Place deserve now?
+
+Presentation answers:
+
+> How should that attention appear on the map?
+
+These responsibilities should never overlap.
 
 ---
 
-## 5. MVP Signals
+# Recommendation Principles
 
-The MVP uses only explicit and explainable signals.
+Recommendation should always remain:
 
-| Signal | Weight |
-|---|---:|
+- Personal
+- Explainable
+- Deterministic
+- Lightweight
+- Local-first
+- Independent of other Places
+
+Recommendation should never become:
+
+- Social ranking
+- AI prediction
+- Popularity scoring
+- Behavioral profiling
+
+The product intentionally recommends from the user's own map rather than from the world's Places.
+
+---
+
+# Importance
+
+Recommendation produces exactly one output:
+
+> **Importance**
+
+Importance represents:
+
+> **How much attention this Place deserves from its owner at this moment.**
+
+Importance is not:
+
+- Quality
+- Rating
+- Popularity
+- Search relevance
+- Travel priority
+
+A highly important Place is simply one that deserves to be rediscovered sooner.
+
+---
+
+# Recommendation Is Not Ranking
+
+PlacePick does not rank Places against one another.
+
+Importance is absolute.
+
+It is not relative.
+
+A Place's Importance depends only on:
+
+- its own stored facts
+- explicit application state
+
+It never depends on:
+
+- neighboring Places
+- viewport competition
+- Top-N selection
+- percentile ranking
+- global popularity
+
+Adding another Place must never reduce the Importance of an existing Place.
+
+Every Place is evaluated independently.
+
+---
+
+# Recommendation Is Relationship-Derived
+
+Recommendation is derived entirely from the Personal Relationship layer.
+
+Conceptually:
+
+```text
+Place Identity
+        │
+        └──────┐
+               │
+               ▼
+Personal Relationship
+        │
+        ▼
+Recommendation
+```
+
+Recommendation does not interpret:
+
+- Place category
+- Geographic region
+- Restaurant vs Hotel
+- Apple Maps metadata
+
+Instead it interprets:
+
+- Favorite
+- Emotion
+- Creation time
+- Other explicit relationship signals
+
+Identity determines what a Place is.
+
+Relationship determines how important it becomes.
+
+---
+
+# Attention Semantics
+
+Recommendation expresses attention rather than value.
+
+For example:
+
+A Favorite Place receives higher Importance not because it is objectively better than other Places.
+
+It receives higher Importance because the user has explicitly said:
+
+> "This Place matters more to me."
+
+Likewise:
+
+A Place without a recorded Emotion may receive higher Importance because it represents an unfinished personal experience.
+
+Recommendation therefore models:
+
+> Attention
+
+rather than:
+
+> Quality.
+
+---
+
+# Attention Signals
+
+The MVP Recommendation Model uses only explicit user-owned signals.
+
+Examples include:
+
+- Favorite
+- Emotion
+- Recently saved
+
+Future versions may introduce additional explicit signals.
+
+Recommendation intentionally avoids inferring hidden intent from:
+
+- current GPS location
+- hemisphere
+- season
+- travel plans
+- browsing history
+- user personality
+
+Every recommendation should be understandable from visible user data.
+
+---
+
+# Explainability
+
+Every Importance contribution should be explainable.
+
+Examples:
+
+```text
+Favorite
+
+↓
+
+This Place receives more attention because you explicitly marked it as a Favorite.
+```
+
+```text
+No Emotion Recorded
+
+↓
+
+This Place receives more attention because you have not yet recorded a personal experience.
+```
+
+```text
+Recently Saved
+
+↓
+
+This Place receives a temporary visibility boost because it was recently added.
+```
+
+Users should always be able to understand why a Place appears more prominent.
+
+Recommendation should never depend on invisible heuristics that cannot be explained.
+
+---
+
+# Part 1 Summary
+
+Recommendation is an interpretation layer.
+
+It transforms Personal Relationships into Attention.
+
+Attention becomes Importance.
+
+Presentation decides how that Importance appears on the map.
+
+Recommendation never changes the user's data.
+
+It only helps users rediscover what already belongs to their Personal Map.
+
+---
+
+# Importance Model
+
+Recommendation converts explicit Personal Relationships into a continuous Importance value.
+
+Conceptually:
+
+```text
+Personal Relationship
+        │
+        ▼
+Recommendation Model
+        │
+        ▼
+Importance
+```
+
+Importance is always derived.
+
+It is never edited directly.
+
+It is never shared.
+
+It is never synchronized.
+
+If necessary, it can always be recomputed from authoritative user data.
+
+---
+
+# Derived Data
+
+Importance belongs to the derived layer of the product.
+
+It exists only to support rediscovery.
+
+Authoritative data includes:
+
+- Collection
+- Favorite
+- Emotion
+- Note
+- Memory Photo
+
+Derived data includes:
+
+- Importance
+- Annotation priority
+- Suggested visual prominence
+
+Deleting derived data must never lose product meaning.
+
+Derived values should always be reproducible.
+
+---
+
+# MVP Signals
+
+The MVP intentionally uses only explicit, user-owned signals.
+
+| Signal | Initial Weight |
+|---------|---------------:|
 | Favorite | +40 |
-| No emotion recorded | +30 |
-| Emotion recorded | -20 |
-| Recently saved | +5 |
+| No Emotion Recorded | +30 |
+| Emotion Recorded | -20 |
+| Recently Saved | +5 |
 
-Season and hemisphere inference are not part of the MVP.
+These values are initial defaults.
 
-Map density, clustering, and viewport position are rendering concerns rather than recommendation signals.
+They are product tuning parameters rather than product principles.
+
+Future versions may adjust individual weights without changing the overall recommendation model.
 
 ---
 
-## 6. Example MVP Formula
+# Signal Philosophy
+
+Every recommendation signal should satisfy three principles.
+
+## Explicit
+
+Signals should originate from deliberate user actions.
+
+Examples:
+
+- marking Favorite
+- recording Emotion
+- saving a Place
+
+Signals should not be inferred from hidden behavioral analysis.
+
+---
+
+## Stable
+
+Recommendation should not fluctuate dramatically from hour to hour.
+
+Signals should change only when meaningful user data changes.
+
+Stable recommendations help users build trust in the product.
+
+---
+
+## Explainable
+
+Every signal should have a clear explanation.
+
+For example:
+
+```text
+Favorite
+
+↓
+
+This Place receives more attention because you explicitly marked it as important.
+```
+
+The product should never produce recommendations that cannot be explained to the user.
+
+---
+
+# Example MVP Formula
+
+Conceptually:
 
 ```text
 importance = 0
 
-if isFavorite:
+if favorite:
     importance += 40
 
 if emotion == nil:
@@ -119,357 +465,497 @@ if recentlySaved:
     importance += 5
 ```
 
-The weights are initial defaults and may be tuned later.
+The exact implementation may evolve.
 
-The structure of the model should remain simple and explainable.
+The conceptual structure should remain simple.
 
----
-
-## 7. Score Range
-
-The MVP score may be normalized to a stable range for rendering.
-
-Recommended conceptual output:
-
-```text
-Importance Score: 0.0 ... 1.0
-```
-
-One possible normalization:
-
-```text
-rawScore = clamp(rawScore, minimumRawScore, maximumRawScore)
-
-importance =
-    (rawScore - minimumRawScore)
-    /
-    (maximumRawScore - minimumRawScore)
-```
-
-The exact normalization belongs to implementation details, but the public contract should expose a stable continuous value.
-
-The renderer should not depend on hard-coded semantic thresholds such as:
-
-```text
-score >= 60 → featured
-```
+Recommendation should remain understandable without requiring machine learning.
 
 ---
 
-## 8. Explainability
+# Continuous Importance
 
-Every score contribution must be explainable from visible user data.
+Recommendation produces a continuous value.
+
+Conceptually:
+
+```text
+0.0
+──────────────►
+1.0
+```
+
+Recommendation intentionally avoids discrete labels such as:
+
+- Featured
+- Recommended
+- Highlighted
+- Top Pick
+
+Those concepts belong to presentation rather than recommendation.
+
+Continuous Importance provides a more flexible foundation for future rendering.
+
+---
+
+# Normalization
+
+Raw signal contributions may be normalized before presentation.
+
+For example:
+
+```text
+Raw Score
+
+↓
+
+Normalization
+
+↓
+
+Importance
+```
+
+Normalization exists only to produce a stable public output.
+
+The exact mathematical implementation is an engineering detail.
+
+The recommendation contract is simply:
+
+Higher Importance means the Place deserves more attention.
+
+---
+
+# Runtime Computation
+
+Importance should be computed when needed.
+
+The product should persist only authoritative facts.
 
 Examples:
 
-```text
-Favorite
-→ This place receives more importance because the user explicitly starred it.
-```
-
-```text
-No emotion
-→ This place receives more importance because the user has not yet recorded an experience.
-```
-
-```text
-Recently saved
-→ This place receives a small temporary visibility boost.
-```
-
-The model must not use invisible guesses about:
-
-- Hemisphere
-- Season
-- Travel intent
-- Device locale
-- Current GPS region
-- User personality
-- Behavioral profiling
-
----
-
-## 9. Runtime Computation
-
-Importance is computed at runtime.
-
-Do not persist:
-
-- Raw recommendation score
-- Normalized Importance Score
-- Symbol size
-- Label priority
-- Cluster priority
-- Visual tier
-
-Persist only the facts needed to reproduce the score.
-
-Examples of persisted facts:
+Persist:
 
 - Favorite
 - Emotion
-- Created date
-- Modified date
+- CreatedAt
+
+Do not persist:
+
+- Raw Score
+- Importance
+- Annotation Size
+- Label Visibility
+
+Importance should always be reproducible.
 
 ---
 
-## 10. Map Renderer Responsibility
+# Determinism
 
-The Map Renderer receives:
+Recommendation must be deterministic.
 
-- Visible Places
-- Importance Scores
-- Current viewport
-- Zoom level
-- Annotation density
-- Cluster state
+Given the same:
 
-It maps Importance Scores into visual treatment.
+- Personal Relationship
+- current time
+- product version
+
+Recommendation must always produce the same Importance.
+
+Deterministic behavior makes recommendation:
+
+- testable
+- explainable
+- predictable
+
+---
+
+# No Hidden Context
+
+Recommendation intentionally ignores hidden contextual information.
+
+Examples include:
+
+- hemisphere
+- current GPS position
+- device locale
+- weather
+- season
+- travel intent
+- browsing history
+- user personality
+
+The MVP recommendation model relies only on explicit user-owned information.
+
+Future versions may introduce additional explicit metadata, but should avoid opaque inference whenever possible.
+
+---
+
+# Performance
+
+Recommendation should remain inexpensive enough to compute locally.
+
+Requirements include:
+
+- no network dependency
+- no cloud service
+- no machine learning model
+- no server-side ranking
+- no full-dataset sorting
+- no percentile computation
+- no cross-Place comparison
+
+Every Place should be scoreable independently.
+
+This allows recommendation to scale naturally as the user's Personal Map grows.
+
+---
+
+# Recommendation Independence
+
+Recommendation evaluates one Place at a time.
+
+Conceptually:
+
+```text
+Place A
+
+↓
+
+Importance A
+```
+
+```text
+Place B
+
+↓
+
+Importance B
+```
+
+Each computation is independent.
+
+Adding, deleting, or modifying another Place must never change the Importance of an unrelated Place.
+
+Recommendation therefore scales linearly with the number of Places.
+
+---
+
+# Part 2 Summary
+
+Recommendation transforms explicit Personal Relationships into continuous Importance.
+
+Importance is derived rather than stored.
+
+Every recommendation should be:
+
+- explicit
+- deterministic
+- explainable
+- inexpensive
+- reproducible
+
+Recommendation intentionally favors transparent user-owned signals over hidden behavioral inference.
+
+---
+
+# Presentation Boundary
+
+Recommendation determines **Importance**.
+
+Presentation determines **Visibility**.
+
+These are separate responsibilities.
+
+Conceptually:
+
+```text
+Personal Relationship
+        │
+        ▼
+Recommendation
+        │
+        ▼
+Importance
+        │
+        ▼
+Presentation
+        │
+        ▼
+Map
+```
+
+Recommendation never decides:
+
+- symbol size
+- label visibility
+- clustering
+- annotation overlap
+- viewport layout
+
+Those decisions belong entirely to Presentation.
+
+---
+
+# Recommendation vs Presentation
+
+Recommendation answers:
+
+> **How much attention does this Place deserve?**
+
+Presentation answers:
+
+> **How should that attention appear on the current map?**
+
+These questions intentionally remain independent.
+
+Importance should remain stable.
+
+Presentation may change continuously.
+
+---
+
+# Presentation Inputs
+
+Presentation receives:
+
+- visible Places
+- Importance
+- current viewport
+- zoom level
+- annotation density
+- cluster state
 
 Conceptually:
 
 ```text
 Visible Places
-+ Importance Scores
-+ Viewport
-+ Zoom
-+ Density
-    ↓
-Map Renderer
-    ↓
-Symbol size
-Label visibility
-Display priority
-Cluster behavior
+      │
+      ▼
+
+Importance
+      │
+      ▼
+
+Presentation
+      │
+      ▼
+
+Map
 ```
 
-The renderer may adapt presentation to prevent visual overload.
-
-It must not change the underlying Importance Scores.
+Presentation combines stable Importance with transient viewing context.
 
 ---
 
-## 11. Density-Aware Presentation
+# Density Adaptation
 
-When the map is sparse, importance differences may be expressed more clearly.
+Presentation may compress visual differences when many Places compete for space.
 
-When the map is dense, the renderer may compress visual differences.
+Examples include:
 
-Examples:
+- reducing symbol-size variation
+- showing fewer labels
+- increasing clustering
+- delaying annotation expansion
 
-- Reduce symbol-size spread
-- Show fewer labels
-- Increase clustering
-- Use importance as annotation priority
-- Prefer more important Places when cluster annotations are released
+These adjustments improve readability.
 
-This is presentation adaptation, not recommendation ranking.
+They do not change Importance.
 
-A Place remains equally important even when its visual treatment is compressed by density.
+A Place remains equally important even when visual differences become smaller.
 
 ---
 
-## 12. Zoom-Aware Presentation
+# Zoom Adaptation
+
+Presentation may express Importance differently at different zoom levels.
 
 At broad zoom levels:
 
-- Prefer clustering
-- Minimize symbol-size differences
-- Show fewer labels
-- Use Importance Score mainly for display priority
+- clustering is preferred
+- labels are limited
+- symbol-size differences are reduced
 
 At neighborhood zoom levels:
 
-- Allow clearer size differences
-- Reveal more labels
-- Reduce clustering
-- Express Importance Score more directly
+- more labels may appear
+- symbol-size differences become clearer
+- clustering is reduced
 
-Zoom changes how importance is displayed, not how importance is computed.
+Zoom changes presentation.
 
----
-
-## 13. No Fixed Featured Quota
-
-The renderer does not need to guarantee:
-
-- Exactly N featured Places
-- A fixed top percentile
-- A winner in every viewport
-
-PlacePick is not a feed or leaderboard.
-
-If many Places are important, they may all remain important.
-
-The renderer's job is to keep the map readable without rewriting that meaning.
+It never changes recommendation.
 
 ---
 
-## 14. No Hidden Reclassification
+# No Hidden Reclassification
 
-The renderer must not silently redefine a Place's importance based on its neighbors.
+Presentation must never silently redefine Importance.
 
 For example:
 
 ```text
-A Place does not become less important
-because several other high-importance Places enter the viewport.
+Place A
+
+Importance = High
 ```
 
-Only its visual expression may be compressed to preserve readability.
-
----
-
-## 15. Recommendation and Availability
-
-Recommendation changes prominence, not availability.
-
-It never:
-
-- Hides a saved Place
-- Removes a Place from search
-- Overrides user filters
-- Changes the map position
-- Modifies relationship data
-- Deletes or demotes Favorites
-- Reorders a user-authored collection
-
----
-
-## 16. Season
-
-Season-aware recommendation is out of scope for MVP.
-
-PlacePick does not infer:
-
-- Hemisphere
-- Season from device locale
-- Season from GPS position
-- Season from map viewport
-- Travel intent
-
-Future seasonal behavior should require explicit metadata or explicit user input.
-
----
-
-## 17. Performance
-
-Recommendation must be inexpensive enough to recompute locally.
-
-Requirements:
-
-- No network dependency
-- No machine learning model
-- No server-side ranking
-- No full-dataset sort
-- No percentile computation
-- No cross-Place comparison
-
-Each Place should be scoreable independently.
-
-The Map Renderer may process the visible set for layout and density management.
-
----
-
-## 18. Suggested Architecture
+remains:
 
 ```text
-Place
-  │
-  ▼
-RecommendationEngine
-  │
-  └── Importance Score
-          │
-          ▼
-MapPresentationEngine
-  │
-  ├── Viewport
-  ├── Zoom
-  ├── Density
-  └── Cluster State
-          │
-          ▼
-Map Annotation Presentation
+Importance = High
 ```
 
-### RecommendationEngine
+even if:
 
-Responsible for:
+- additional Places enter the viewport
+- the user zooms out
+- clustering occurs
 
-- Reading explicit Place facts
-- Computing raw importance
-- Normalizing importance
-- Returning a deterministic continuous score
+Presentation may temporarily reduce visual prominence.
 
-Not responsible for:
-
-- Annotation size
-- Label visibility
-- Clustering
-- Viewport ranking
-- Top-N selection
-
-### MapPresentationEngine
-
-Responsible for:
-
-- Mapping importance into visual presentation
-- Adapting to zoom and density
-- Preserving readability
-- Coordinating annotation and cluster priority
-
-Not responsible for:
-
-- Changing Importance Scores
-- Interpreting Favorite or Emotion semantics
-- Persisting recommendation state
+It must never rewrite recommendation meaning.
 
 ---
 
-## 19. Conceptual API
+# Recommendation and Availability
 
-```swift
-struct ImportanceScore {
-    let value: Double
-}
+Recommendation changes attention.
 
-protocol RecommendationEngine {
-    func importance(for place: Place, now: Date) -> ImportanceScore
-}
+It never changes availability.
 
-protocol MapPresentationEngine {
-    func presentation(
-        for visiblePlaces: [VisiblePlace],
-        viewport: MapViewport,
-        zoomLevel: Double
-    ) -> [PlacePresentation]
-}
-```
+Recommendation never:
 
-The exact implementation may differ, but the separation of responsibilities must remain.
+- hides saved Places
+- removes Places from search
+- changes Collection membership
+- modifies Favorites
+- edits Emotion
+- moves Places
+- changes Place Identity
+
+Every saved Place remains part of the Personal Map regardless of Importance.
 
 ---
 
-## 20. MVP Success Criteria
+# Engineering Invariants
 
-The model succeeds when:
+Every implementation must preserve the following rules.
 
-- The same Place receives the same Importance Score from the same facts
-- Users can understand why a Place has higher importance
-- Adding more Places does not alter existing scores
-- The map remains readable at both low and high density
-- Rendering adapts without changing recommendation meaning
-- No hidden ranking system is introduced
+## Importance Is Derived
+
+Importance is computed.
+
+It is never stored as authoritative data.
+
+Deleting cached recommendation data must never lose user information.
 
 ---
 
-## 21. Final Principles
+## Importance Is Stable
 
-> Importance is absolute. Presentation is contextual.
+Given the same:
 
-> Recommendation does not rank Places against one another.
+- Personal Relationship
+- current time
+- product version
 
-> The renderer may compress visual differences, but it must not rewrite what the user's data means.
+Recommendation always produces the same Importance.
 
-> Prefer explicit facts over inferred context.
+---
+
+## Presentation Is Contextual
+
+Presentation depends on:
+
+- viewport
+- zoom
+- density
+
+Recommendation does not.
+
+---
+
+## Recommendation Never Changes Data
+
+Recommendation is read-only.
+
+It never modifies:
+
+- Place Identity
+- Collection
+- Favorite
+- Emotion
+- Note
+- Memory Photo
+
+Recommendation interprets user data.
+
+It never edits it.
+
+---
+
+## Presentation Never Changes Recommendation
+
+Presentation may compress or expand visual differences.
+
+It must never:
+
+- recalculate Importance
+- reinterpret Recommendation
+- introduce hidden ranking
+
+Recommendation remains the single source of truth for attention.
+
+---
+
+# Testing Requirements
+
+Every implementation should include automated tests covering the following behaviors.
+
+## Recommendation
+
+- The same input always produces the same Importance.
+- Recommendation depends only on explicit signals.
+- Adding unrelated Places does not change existing Importance.
+- Recommendation remains explainable.
+
+---
+
+## Presentation
+
+- Different zoom levels preserve Recommendation.
+- Density compression does not change Importance.
+- Clustering does not change Recommendation.
+- Label visibility does not affect Importance.
+
+---
+
+## Separation of Responsibilities
+
+- Recommendation never edits persistent data.
+- Presentation never recalculates Recommendation.
+- Deleting cached presentation state never changes product meaning.
+- Recommendation remains reproducible from authoritative data.
+
+---
+
+# Final Principles
+
+> Recommendation interprets relationships.
+
+> Importance represents attention.
+
+> Presentation expresses attention.
+
+> Recommendation is absolute.
+
+> Presentation is contextual.
+
+> Derived data should never become authoritative.
+
+> Recommendation never rewrites the user's Personal Map.
+
+> Presentation may simplify what the user sees, but never what the user's data means.

@@ -1,20 +1,81 @@
 # PlacePick — PLACE_CREATION.md
 
-Version: 4.0
+Version: 5.0
 
-This document defines how Places are created in PlacePick.
-
-It focuses on the creation workflow rather than UI implementation.
+Status: Place Creation Architecture Specification
 
 ---
 
-# Goal
+# Purpose
 
-Creating a Place should require the fewest possible decisions.
+This document defines how a real-world Place becomes part of the user's Personal Map.
 
-Apple Maps already knows the objective facts.
+Creation establishes a verified Place identity before the user records any personal relationship.
 
-PlacePick should ask only for the personal information Apple cannot know.
+It describes the product model for creating Places rather than the visual interface.
+
+---
+
+# Relationship to Other Documents
+
+This document should be read together with:
+
+- MVP.md
+- DATA_MODEL.md
+- IMPORT_PIPELINE.md
+- UI_STRUCTURE.md
+
+Responsibilities are divided as follows.
+
+MVP.md defines:
+
+- Product philosophy
+- User experience
+- Product scope
+
+DATA_MODEL.md defines:
+
+- Place Identity
+- Personal Relationship
+- Persistence
+
+IMPORT_PIPELINE.md defines:
+
+- How external content becomes a verified Place identity
+
+UI_STRUCTURE.md defines:
+
+- Capture Flow
+- Place Detail
+- Identity Maintenance
+
+This document defines:
+
+- How verified Place identity is established
+- How a Place enters the standard Capture Flow
+- The boundary between Place identity and Personal Relationship
+
+---
+
+# Creation Model
+
+Creating a Place follows three conceptual stages.
+
+```text
+Verified Identity
+        │
+        ▼
+Personal Relationship
+        │
+        ▼
+Saved Place
+```
+
+This document focuses on the first stage.
+
+Before a Place can become part of the user's Personal Map, its real-world identity must first be established.
+
+Only after identity has been verified can the user record a personal relationship.
 
 ---
 
@@ -22,24 +83,168 @@ PlacePick should ask only for the personal information Apple cannot know.
 
 ## Apple Maps Owns Identity
 
-Every Place begins with an Apple Maps search result.
+Every Place begins with a verified Apple Maps result.
 
-Apple Maps provides:
+Apple Maps provides the objective description of a Place, including:
 
 - Place name
 - Coordinates
 - Apple Maps identifier
 - MapKit-derived metadata
 
-These values become the Place identity.
+These values form the Place Identity.
 
 Users do not manually edit them.
 
+The objective world belongs to Apple Maps.
+
 ---
 
-## Users Own Relationships
+## Verified Identity Comes First
 
-After selecting a Place, the user provides only relationship data.
+A Place cannot exist without a verified identity.
+
+Users cannot create Places from:
+
+- free text
+- arbitrary map coordinates
+- manually typed names
+- imported content without Apple Maps confirmation
+
+Every saved Place must correspond to one real-world Place.
+
+This guarantees consistency across search, recommendation, synchronization, and future updates.
+
+---
+
+# Apple Maps Search
+
+Creation begins with Apple Maps Search.
+
+Users may search using:
+
+- Place names
+- Addresses
+- Landmarks
+- Businesses
+- Geographic locations
+
+Search results come directly from MapKit.
+
+PlacePick never maintains its own Place database or search index.
+
+Apple Maps remains the single source of truth for Place identity.
+
+---
+
+# Selecting a Place
+
+A Place is created only after the user selects one Apple Maps search result.
+
+Selecting a result establishes the Place Identity.
+
+Conceptually:
+
+```text
+Search
+
+↓
+
+Apple Maps Results
+
+↓
+
+Verified Identity
+```
+
+At this point, the Place is identifiable but not yet part of the Personal Map.
+
+No user relationship has been recorded.
+
+---
+
+# Duplicate Detection
+
+Before continuing to relationship capture, PlacePick checks whether the selected Apple Maps identity already exists.
+
+Useful signals include:
+
+- Apple Maps identifier
+- nearby coordinates
+- normalized Place name
+
+If no duplicate exists:
+
+Continue to the standard Capture Flow.
+
+If a duplicate exists:
+
+Open the existing Place instead.
+
+The MVP intentionally supports only one saved copy of each real-world Place.
+
+---
+
+# Identity Boundary
+
+Place identity represents objective information about the real world.
+
+It answers:
+
+> Which Place is this?
+
+It does not answer:
+
+- Why the user saved it
+- Whether the user likes it
+- Which Collection it belongs to
+- What memories it contains
+
+Those belong to the Personal Relationship layer.
+
+Identity must always be established before personal meaning can exist.
+
+---
+
+# Part 1 Summary
+
+Place creation begins by establishing a verified Apple Maps identity.
+
+Apple Maps defines what the Place is.
+
+PlacePick does not duplicate or modify this information.
+
+Only after identity has been verified can the user begin creating a Personal Relationship with the Place.
+
+---
+
+# Relationship Creation
+
+Once a Place has a verified Apple Maps identity, the user begins creating a Personal Relationship.
+
+Conceptually:
+
+```text
+Verified Identity
+        │
+        ▼
+Personal Relationship
+        │
+        ▼
+Saved Place
+```
+
+At this stage, the objective Place is already known.
+
+The remaining information belongs entirely to the user.
+
+---
+
+# Users Own Relationships
+
+Apple Maps describes the Place.
+
+Users describe their relationship with the Place.
 
 Relationship fields include:
 
@@ -49,73 +254,16 @@ Relationship fields include:
 - Note
 - Memory Photo
 
-These describe the user's relationship with the Place rather than the Place itself.
+These fields answer questions Apple Maps cannot.
 
----
+Examples include:
 
-# Creation Flow
+- Why did I save this Place?
+- How did I feel about it?
+- Which Collection does it belong to?
+- What memories do I want to keep?
 
-```text
-Map
- │
- ▼
-Tap "+"
- │
- ▼
-Apple Maps Search
- │
- ▼
-Live MapKit Results
- │
- ▼
-Select Place
- │
- ▼
-Personal Information
- │
- ├── Collection
- ├── Favorite
- ├── Emotion
- ├── Note
- └── Memory Photo
- │
- ▼
-Save
- │
- ▼
-Return to Map
-```
-
----
-
-# MapKit Search
-
-PlacePick always relies on MapKit to identify Places.
-
-Users may search using:
-
-- Place names
-- Addresses
-- Landmarks
-
-Search results come directly from Apple Maps.
-
-PlacePick never creates its own search index.
-
----
-
-# Creating a Place
-
-A Place can only be created after the user selects a valid MapKit result.
-
-The user cannot create a Place from:
-
-- Free text
-- Arbitrary coordinates
-- Manually typed names
-- Imported text without MapKit confirmation
-
-This guarantees every Place has a stable Apple Maps identity.
+The Personal Relationship belongs entirely to the user.
 
 ---
 
@@ -123,35 +271,42 @@ This guarantees every Place has a stable Apple Maps identity.
 
 Every Place belongs to exactly one Collection.
 
-Before saving, the user selects one Collection.
+Collection is required before saving.
 
-The Collection picker displays Collections in the user's custom order.
+The Collection picker displays Collections in the user's preferred order.
 
-If the desired Collection does not exist, the user may create one without leaving the creation flow.
+If the desired Collection does not exist, the user may create a new Collection without leaving the creation flow.
 
-The new Collection becomes immediately available and is automatically selected.
+The newly created Collection becomes immediately available and is automatically selected.
 
----
+Collection organizes the user's Personal Map.
 
-# Duplicate Detection
-
-Before creating a new Place, PlacePick checks whether the selected Apple Maps identifier already exists.
-
-If no duplicate exists:
-
-→ Create the new Place.
-
-If a duplicate exists:
-
-→ Open the existing Place.
-
-The MVP intentionally does not support multiple saved copies of the same real-world Place.
+It is not part of Place Identity.
 
 ---
 
-# Default Values
+# Optional Relationship Fields
 
-A newly created Place has:
+Collection is the only required relationship field.
+
+The following fields are optional:
+
+- Favorite
+- Emotion
+- Note
+- Memory Photo
+
+Users may save a Place immediately after selecting a Collection.
+
+Additional relationship information may be added later.
+
+The creation experience should remain lightweight.
+
+---
+
+# Default Relationship
+
+When a new Place is created:
 
 ```text
 Favorite      = false
@@ -160,25 +315,42 @@ Memory Photo  = none
 Note          = empty
 ```
 
-Collection has no default.
+No assumptions are made about the user's experience.
 
-The user must explicitly choose one before saving.
+A newly created Place is simply part of the Personal Map.
+
+The relationship may evolve over time.
 
 ---
 
-# Save
+# Saving a Place
 
-Saving a Place creates two conceptual layers.
+Saving creates the complete Place defined by the data model.
+
+Conceptually:
+
+```text
+Verified Identity
+        │
+        ▼
+Personal Relationship
+        │
+        ▼
+Saved Place
+```
+
+A successful save creates both conceptual layers:
 
 ## Identity
 
 Provided by Apple Maps:
 
 - Apple Maps identifier
-- Name
+- Place name
 - Coordinates
+- MapKit metadata
 
-## Relationship
+## Personal Relationship
 
 Provided by the user:
 
@@ -192,17 +364,125 @@ These layers remain independent throughout the life of the Place.
 
 ---
 
+# After Saving
+
+Once saved, the Place immediately becomes part of the user's Personal Map.
+
+Creation ends.
+
+Subsequent product systems begin.
+
+Conceptually:
+
+```text
+Saved Place
+        │
+        ▼
+Recommendation
+        │
+        ▼
+Presentation
+```
+
+Recommendation interprets the Personal Relationship.
+
+Presentation determines how the Place appears on the map.
+
+Creation plays no further role.
+
+---
+
+# Relationship Boundary
+
+Relationship describes the user's connection to a Place.
+
+It does not change:
+
+- Place identity
+- Place location
+- Apple Maps metadata
+
+Likewise, future updates to Apple Maps do not change:
+
+- Collection
+- Favorite
+- Emotion
+- Note
+- Memory Photo
+
+Identity and Personal Relationship remain independent throughout the lifetime of the Place.
+
+---
+
+# Part 2 Summary
+
+A verified Place becomes part of the Personal Map only after the user records a Personal Relationship.
+
+Apple Maps defines what the Place is.
+
+The user defines what the Place means.
+
+Saving combines these two layers into a single Place.
+
+From that point forward, the Place participates in recommendation, presentation, and every other product system.
+
+---
+
+# Identity Maintenance
+
+Once a Place has been created, its Personal Relationship may evolve over time.
+
+Occasionally, the Place Identity itself also needs correction.
+
+Identity Maintenance defines how Place identity may change while preserving the user's Personal Relationship.
+
+---
+
+# Correcting Place Identity
+
+Place identity is normally permanent.
+
+However, users may occasionally select the wrong Apple Maps result during creation.
+
+Examples include:
+
+- the wrong restaurant branch
+- the wrong hotel
+- the wrong building
+- a business with a similar name
+
+These situations require correcting the Place Identity rather than creating a new Place.
+
+---
+
 # Replace Place
 
-Replace Place exists for situations where the wrong Apple Maps result was selected.
+Replace Place allows the user to replace the Apple Maps identity while preserving the existing Personal Relationship.
 
-Examples:
+Conceptually:
 
-- Wrong restaurant branch
-- Wrong building
-- Wrong business with a similar name
+```text
+Old Identity
+        │
+        ▼
+Replace Identity
+        │
+        ▼
+New Identity
 
-Replace Place updates only the identity layer.
+Relationship
+        │
+        └──────────────► Preserved
+```
+
+Replacing a Place updates only the Identity layer.
+
+It replaces:
+
+- Apple Maps identifier
+- Place name
+- Coordinates
+- MapKit-derived metadata
 
 It preserves:
 
@@ -212,59 +492,128 @@ It preserves:
 - Note
 - Memory Photo
 
-while replacing:
-
-- Apple Maps identifier
-- Name
-- Coordinates
-
-The user's relationship with the Place remains intact.
+The user's memories remain attached to the corrected Place.
 
 ---
 
-# Import Pipeline
+# Relationship Preservation
 
-Places imported through the Share Extension follow exactly the same creation process.
+Replace Place exists to correct objective information.
 
-Imported content may help pre-fill the MapKit search.
+It does not reinterpret the user's intent.
 
-However, every imported Place still requires the user to select one MapKit result before creation.
+Unless future product rules explicitly define otherwise, replacing a Place always preserves the existing Personal Relationship.
 
-All creation paths converge into the same workflow.
-
----
-
-# Error Handling
-
-## No Search Results
-
-If MapKit returns no suitable results:
-
-- No Place is created.
-- The user may refine the search.
-
-## Duplicate Found
-
-If the selected Place already exists:
-
-- Open the existing Place.
-- Do not create a duplicate.
-
-## Cancel
-
-If the user cancels at any point:
-
-- No Place is created.
-- No partial draft is saved.
+The user should never lose personal memories because an incorrect Place identity was selected.
 
 ---
 
-# Product Principles
+# Import as an Entry Point
+
+Import does not create a different kind of Place.
+
+Whether a Place originates from:
+
+- manual search
+- Share Extension
+- future import methods
+
+every creation path converges at the same point:
+
+```text
+Verified Identity
+        │
+        ▼
+Relationship Creation
+        │
+        ▼
+Saved Place
+```
+
+After creation, the product no longer distinguishes how a Place entered the Personal Map.
+
+---
+
+# Cancellation
+
+Users may leave the creation flow at any time before saving.
+
+If creation is cancelled:
+
+- no Place is created
+- no Personal Relationship is recorded
+- no partial Place exists in the Personal Map
+
+Creation is atomic.
+
+It either completes successfully or produces no Place.
+
+---
+
+# Failure Handling
+
+Creation may occasionally be interrupted.
+
+Examples include:
+
+## No Apple Maps Results
+
+The user may refine the search.
+
+No unresolved Place is created.
+
+---
+
+## Duplicate Place
+
+If the selected Apple Maps identity already exists:
+
+Open the existing Place.
+
+Do not create another copy.
+
+---
+
+## Network Unavailable
+
+If Apple Maps cannot verify Place identity:
+
+Creation cannot continue.
+
+The existing Personal Map remains fully usable.
+
+---
+
+# Creation Invariants
+
+The following rules should always remain true.
+
+A Place must never exist without:
+
+- verified Apple Maps identity
+- one Collection
+
+The system must never:
+
+- create unresolved Places
+- create duplicate identities
+- partially save Personal Relationships
+- separate Identity from Relationship after saving
+
+These invariants keep Place creation consistent with the overall product model.
+
+---
+
+# Final Principles
 
 > Apple Maps identifies Places.
 
-> Users create memories.
+> Users create Personal Relationships.
 
-PlacePick asks only for the information Apple cannot know.
+> Identity must exist before Relationship.
 
-A Place is created only after the user connects those two layers together.
+> Replace corrects identity without changing personal meaning.
+
+> Every creation path produces the same Place model.
+
+> The product remembers Places—not how they were created.

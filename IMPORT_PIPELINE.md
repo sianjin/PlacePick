@@ -1,90 +1,272 @@
 # PlacePick — IMPORT_PIPELINE.md
 
-Version: 1.0  
-Scope: MVP
+Version: 2.0
+
+Status: Import Architecture Specification
 
 ---
 
 # Purpose
 
-PlacePick should make saving a place from social media faster than manually copying information into a map app.
+This document defines how external content becomes part of the user's Personal Map.
 
-The MVP import flow is:
+Import exists to reduce the effort of capturing meaningful Places while preserving reliable Place identity.
+
+It does not attempt to understand or reproduce the original content.
+
+Instead, it helps users move from discovering a Place to saving it correctly.
+
+---
+
+# Relationship to Other Documents
+
+This document should be read together with:
+
+- MVP.md
+- COLLECTIONS.md
+- DATA_MODEL.md
+- UI_STRUCTURE.md
+
+Responsibilities are divided as follows.
+
+MVP.md defines:
+
+- Product philosophy
+- User experience
+- Product scope
+
+DATA_MODEL.md defines:
+
+- Place Identity
+- Personal Relationship
+- Persistence
+
+UI_STRUCTURE.md defines:
+
+- Capture Flow
+- Relationship Editing
+- Identity Correction
+
+This document defines:
+
+- How external content enters the product
+- How Place identity is resolved
+- How import integrates with the standard Capture Flow
+
+Import never creates new product concepts.
+
+It simply provides an alternative entry into the existing Place lifecycle.
+
+---
+
+# Import Model
+
+Import is the bridge between the outside world and the user's Personal Map.
+
+Conceptually:
 
 ```text
-Share text or link
-        ↓
-Extract an obvious title or place phrase
-        ↓
-Pre-fill Apple Maps Search
-        ↓
-User selects a reliable Apple Maps result
-        ↓
-Save as Place
+External Content
+        │
+        ▼
+Candidate
+        │
+        ▼
+Apple Maps Identity
+        │
+        ▼
+Personal Relationship
+        │
+        ▼
+Saved Place
 ```
 
-The goal is not to understand the entire social-media post.
+Each stage has a different responsibility.
 
-The goal is to reduce typing while preserving reliable place identity.
+External Content answers:
 
----
+> What did the user discover?
 
-# Core Principle
+Candidate answers:
 
-> **Automation may suggest a place. Only Apple Maps resolution and user confirmation may create a Place.**
+> What Place might this refer to?
 
-Shared content is untrusted input.
+Apple Maps Identity answers:
 
-A social post, caption, title, or URL may contain:
+> Which real-world Place is this?
 
-- The wrong branch
-- Multiple businesses
-- A neighborhood rather than a place
-- A city name
-- A nearby landmark
-- Promotional language
-- No usable location at all
+Personal Relationship answers:
 
-PlacePick must never silently convert extracted text into a saved Place.
+> What does this Place mean to the user?
 
----
+Saved Place answers:
 
-# MVP Boundary
+> This Place is now part of the Personal Map.
 
-## MVP Includes
-
-- iOS Share Extension
-- Receiving shared text and URLs
-- Extracting an obvious title or search phrase
-- Pre-filling Add Place search
-- Apple MapKit place search
-- User confirmation
-- Manual correction and fallback
-- Temporary pending-import storage
-
-## MVP Does Not Include
-
-- Advanced AI interpretation
-- Video understanding
-- OCR of arbitrary screenshots
-- Full social-post summarization
-- Automatic multi-place extraction
-- Automatic saving without confirmation
-- Importing social-media photos
-- Preserving the source platform as permanent Place data
-- Scraping private or authenticated social pages
-
-AI may be added later as an enhancement, but it is not required for a useful MVP.
+Import ends once the Place enters the normal Capture Flow.
 
 ---
 
-# Product Flow
+# Import Principles
 
-## Entry Point
+Import should always remain:
 
-The user shares content from another app to PlacePick.
+- Fast
+- Reliable
+- Deterministic
+- Local-first
+- Explainable
 
-Possible source apps include:
+Import should never become:
+
+- Automatic saving
+- AI-generated memory
+- Social-media archiving
+- Business information import
+- Personal knowledge extraction
+
+Import exists to accelerate saving.
+
+It does not replace user judgment.
+
+---
+
+# Identity Before Relationship
+
+Import follows the same conceptual model as the rest of PlacePick.
+
+Identity is established first.
+
+Only then can the user record a personal relationship.
+
+Conceptually:
+
+```text
+Candidate
+
+↓
+
+Apple Maps Identity
+
+↓
+
+Collection
+
+↓
+
+Favorite
+
+↓
+
+Emotion
+
+↓
+
+Note
+
+↓
+
+Memory Photo
+```
+
+Users never attach personal memories to an unresolved Place.
+
+Reliable identity always comes first.
+
+---
+
+# Automation Boundary
+
+Automation may assist throughout the import process.
+
+Examples include:
+
+- extracting likely search text
+- recognizing an obvious place name
+- suggesting a search query
+- suggesting a Collection
+
+Automation never decides:
+
+- which Place is correct
+- which Apple Maps result should be used
+- what the user's relationship is
+- whether a Place should be saved
+
+Automation proposes.
+
+Apple Maps resolves.
+
+The user confirms.
+
+---
+
+# Import Boundary
+
+Import intentionally ends at Identity resolution.
+
+Once the user has selected a valid Apple Maps Place:
+
+The remaining experience is the standard Capture Flow defined in UI_STRUCTURE.md.
+
+Import should never create a separate editing experience.
+
+Every successful import ultimately becomes an ordinary saved Place.
+
+From that point forward, imported Places behave exactly the same as manually created Places.
+
+The product should never distinguish between them.
+
+---
+
+# Part 1 Summary
+
+Import is not a separate feature.
+
+It is an alternative entry into the Place lifecycle.
+
+External content becomes a Candidate.
+
+A Candidate becomes a verified Apple Maps Identity.
+
+The user then records a Personal Relationship.
+
+Once saved, every Place follows the same product model regardless of how it entered the Personal Map.
+
+
+
+---
+
+# Candidate Resolution
+
+Candidate Resolution transforms external content into a verified Apple Maps Place.
+
+Conceptually:
+
+```text
+External Content
+        │
+        ▼
+Candidate
+        │
+        ▼
+MapKit Resolution
+        │
+        ▼
+Verified Apple Maps Identity
+```
+
+Candidate Resolution never creates a Place.
+
+It prepares the user to select one.
+
+---
+
+# Entry Points
+
+Import may begin from many sources.
+
+Examples include:
 
 - Xiaohongshu
 - Instagram
@@ -93,460 +275,641 @@ Possible source apps include:
 - Safari
 - Messages
 - Notes
-- Other apps supporting the iOS share sheet
+- Any app supporting the iOS Share Sheet
 
-The Share Extension should accept, when available:
+Although these sources provide different payloads, they all enter the same Candidate Resolution pipeline.
 
-- URL
-- Plain text
-- Shared title
-- Selected text
-
-The exact payload depends on the source app.
+The source application should not affect the saved Place model.
 
 ---
 
-# End-to-End Flow
+# Share Extension
 
-```text
-User taps Share
-        ↓
-Selects PlacePick
-        ↓
-Share Extension captures lightweight input
-        ↓
-PendingImport is saved to the App Group container
-        ↓
-Main app opens Add Place
-        ↓
-Best available phrase is pre-filled into MapKit Search
-        ↓
-User reviews Apple Maps results
-        ↓
-User selects the correct result
-        ↓
-User chooses a primary category
-        ↓
-Place is saved
-        ↓
-PendingImport is deleted
-        ↓
-Return to the map
-```
+The Share Extension should remain lightweight.
 
-The map remains the product destination.
+Its responsibilities are limited to:
 
-The import flow should be short and should end by returning the user to their personal map.
+1. Receive shared content.
+2. Preserve the shared payload.
+3. Extract an initial Candidate when possible.
+4. Launch the main application.
+
+The Share Extension should not:
+
+- resolve Places
+- perform complex searches
+- save Places
+- synchronize user data
+- perform long-running network operations
+
+It exists only to hand off information to the main application.
 
 ---
 
-# Share Extension Responsibilities
+# Candidate Extraction
 
-The Share Extension should do as little work as possible.
+External content is interpreted only far enough to produce a useful search candidate.
 
-It should:
+Possible inputs include:
 
-1. Receive the shared payload.
-2. Extract lightweight text and URL metadata already provided by iOS.
-3. Derive a reasonable initial search phrase when possible.
-4. Save a `PendingImport`.
-5. Hand off to the main app.
+- shared title
+- selected text
+- shared URL
+- shared caption
 
-It should not:
+The output is always:
 
-- Perform complex MapKit searches
-- Run advanced AI models
-- Download large remote assets
-- Write final Place records
-- Start CloudKit synchronization directly
-- Block while parsing a social page
-- Import social-media images
+> A Candidate Search Phrase
 
-This keeps the extension fast, reliable, and within iOS extension limits.
+Candidates are intentionally imperfect.
+
+They exist only to reduce typing.
 
 ---
 
-# PendingImport Model
+# Candidate Priority
 
-`PendingImport` is temporary transport data.
-
-It is not a Place.
-
-Conceptual model:
-
-```swift
-struct PendingImport: Codable, Identifiable {
-    let id: UUID
-
-    var sourceURL: URL?
-    var sharedTitle: String?
-    var sharedText: String?
-    var suggestedSearchText: String?
-
-    let createdAt: Date
-}
-```
-
-## Storage
-
-Pending imports should be stored in an App Group shared container so both the Share Extension and main app can access them.
-
-Pending imports:
-
-- Do not sync through iCloud
-- Are not permanent user memories
-- Should be deleted after successful save
-- May expire after a short period
-- Must not appear as saved places
-
----
-
-# Search Phrase Extraction
-
-The MVP should use deterministic, lightweight extraction.
-
-No advanced AI is required.
-
-## Extraction Priority
-
-Use the first useful value from this order:
+When multiple possible candidates exist, prefer the first reliable source:
 
 1. Explicit shared title
 2. User-selected text
-3. Short shared caption or text
-4. Human-readable URL title, when already available
-5. URL host or path fragment as a weak fallback
-6. Empty search field for manual entry
+3. Shared caption
+4. Human-readable URL title
+5. URL fragments
+6. Empty search
 
-## Cleanup
-
-Before pre-filling search:
-
-- Trim whitespace
-- Remove obvious share boilerplate
-- Remove repeated hashtags
-- Remove tracking URL fragments
-- Collapse repeated spaces
-- Limit excessive length
-- Preserve non-English place names
-- Preserve branch, neighborhood, and city hints when available
-
-The extractor should avoid aggressively rewriting the text.
-
-A slightly imperfect search phrase is safer than an invented location.
+An empty search field is always preferable to inventing a Place.
 
 ---
 
-# Optional Lightweight Parsing
+# Candidate Cleanup
 
-The MVP may use simple heuristics to identify likely place phrases.
+Before searching MapKit:
 
-Examples:
+- trim whitespace
+- remove obvious share boilerplate
+- collapse repeated spaces
+- remove tracking URL parameters
+- preserve branch information
+- preserve city and neighborhood hints
+- preserve non-English Place names
 
-- Text before a separator such as `|`, `—`, or `-`
-- A short title followed by a city or neighborhood
-- A business-like phrase near words such as “at,” “in,” or localized equivalents
-- Explicit address-like text
+Candidate cleanup should remain conservative.
 
-Natural Language APIs may be used as a lightweight enhancement to identify organizations or place names, but the feature must remain fully usable without them.
-
-The parser should return search text, not a final Place.
-
----
-
-# URL Handling
-
-## Apple Maps Links
-
-When the shared URL is an Apple Maps link:
-
-1. Parse any available map item or coordinate information.
-2. Resolve it through MapKit when needed.
-3. Show the resolved Apple Maps result for confirmation.
-4. Never bypass user confirmation.
-
-## Google Maps Links
-
-When the shared URL is a Google Maps link:
-
-1. Extract any available place name, query, or coordinates.
-2. Use those values to pre-fill Apple MapKit Search.
-3. Ask the user to select the matching Apple Maps result.
-
-The saved Place remains anchored to Apple Maps identity and coordinates.
-
-## Social-Media Links
-
-For social-media URLs:
-
-- Use title or shared text supplied by the share payload.
-- Do not depend on scraping the page.
-- Do not require login cookies or private-page access.
-- Do not preserve the original link as permanent Place data in MVP.
-
-When no useful title or text exists, open Add Place with an empty search field.
+Import should improve search quality without changing the user's intended meaning.
 
 ---
 
-# Main App Resolution
+# URL Resolution
 
-The main app performs reliable place resolution.
+URLs should assist Candidate Resolution rather than bypass it.
 
-Recommended MapKit components:
+## Apple Maps URLs
 
-- `MKLocalSearchCompleter`
-- `MKLocalSearch`
-- `MKMapItem`
+Apple Maps links may already contain reliable Place information.
 
-The pre-filled phrase becomes the initial search query.
+When available:
 
-The user must select an Apple Maps result before saving.
+- extract MapKit identifiers
+- extract coordinates
+- extract Place names
+
+Even then:
+
+The user still confirms the final Place.
 
 ---
 
-# Search Result UI
+## Google Maps URLs
 
-The resolution modal should contain:
-
-- Search bar
-- Pre-filled search text when available
-- Apple Maps result list
-- Loading state
-- Empty state
-- Manual query editing
-
-Each result should show only enough information to disambiguate it, such as:
+Google Maps links may provide:
 
 - Place name
-- Locality or neighborhood
-- Short address context supplied by MapKit
+- Coordinates
+- Query text
 
-Address information is allowed here because this is a resolution step.
+These values become Candidate information for Apple Maps Search.
 
-It does not appear in the final Place Detail Card.
-
----
-
-# Required Confirmation
-
-A final Place can be created only after the user chooses a reliable MapKit result.
-
-Minimum required resolved data:
-
-- Internal UUID
-- Apple Maps identifier when available
-- Apple Maps place name
-- Latitude
-- Longitude
-- Primary category
-
-The user may then save immediately.
-
-Note, emotion, favorite, and memory photo are optional and should not slow capture.
+The saved Place always uses Apple Maps identity.
 
 ---
 
-# Category During Import
+## Social Media URLs
 
-The user must select one primary category before saving.
+Social-media links should use only information already provided through the share payload.
 
-The app may suggest a category based on obvious text or MapKit metadata.
+The product should not:
 
-A category suggestion is never authoritative.
+- scrape web pages
+- require authentication
+- depend on private APIs
 
-The user can change it before or after saving.
-
-MVP category suggestions should be deterministic and simple.
-
-Examples:
-
-```text
-cafe / bubble tea / bar → Drink
-restaurant / ramen / bakery meal context → Restaurant / Food
-museum / gallery → Museum
-trail / mountain → Hiking
-hotel / resort → Stay / Hotel
-ski resort → Skiing
-orchard / farm picking → Fruit Picking
-```
-
-When uncertain, default to `Other` or ask the user to choose.
+If useful Candidate information cannot be extracted, the user simply begins with an empty search.
 
 ---
 
-# Duplicate Detection
+# Optional AI Enhancement
 
-Before creating the Place, check for an obvious existing match.
+The MVP does not require AI.
 
-Useful signals:
-
-1. Same Apple Maps identifier
-2. Very close coordinates
-3. Same normalized name within a small distance
-
-When a likely duplicate exists, show a lightweight choice:
-
-```text
-This place is already in PlacePick.
-
-Open Existing
-Save Another
-```
-
-Do not silently merge or discard the import.
-
----
-
-# Failure and Fallback Behavior
-
-Import must never fail merely because extraction is weak.
-
-## No Shared Text
-
-Open Add Place with an empty search field.
-
-## Unusable URL
-
-Ignore the URL for extraction and allow manual search.
-
-## No MapKit Results
-
-Allow the user to revise the query.
-
-## Multiple Possible Branches
-
-Show Apple Maps results and require selection.
-
-## Extension Error
-
-Preserve any text already captured when possible and provide a manual Add Place path.
-
-## Offline
-
-The main app remains usable, but new place resolution may require network access.
-
-Do not create an unresolved Place as a substitute.
-
----
-
-# AI Enhancement — Future, Not MVP
-
-A future version may use a lightweight model when deterministic extraction produces poor search text.
+Future versions may use lightweight AI to improve Candidate quality.
 
 Possible AI output:
 
+- Place name
+- City
+- Neighborhood
+- Category hint
+
+AI remains advisory.
+
+It never:
+
+- creates Places
+- chooses branches
+- invents addresses
+- bypasses user confirmation
+
+Candidate Resolution must remain fully functional without AI.
+
+---
+
+# Apple Maps Resolution
+
+Candidate Resolution ends with Apple Maps.
+
+The main application performs Place resolution using MapKit.
+
+The search experience should feel similar to Apple Maps.
+
+Users may:
+
+- review suggestions
+- refine the search
+- select the correct Place
+
+Only a verified Apple Maps result may become a Place.
+
+---
+
+# Duplicate Resolution
+
+After the user selects an Apple Maps result:
+
+The app checks for an existing saved Place.
+
+Useful signals include:
+
+- Apple Maps identifier
+- nearby coordinates
+- normalized Place name
+
+If no duplicate exists:
+
+Continue to the standard Capture Flow.
+
+If a duplicate exists:
+
+Open the existing Place instead.
+
+The MVP intentionally avoids automatic merging or duplicate creation.
+
+---
+
+# Candidate Resolution Summary
+
+Candidate Resolution converts uncertain external information into reliable Place identity.
+
+Import never assumes the correct Place.
+
+Automation proposes a Candidate.
+
+Apple Maps resolves identity.
+
+The user confirms the final result.
+
+Only then does the Place enter the normal Capture Flow.
+
+---
+
+# Relationship Capture
+
+Once a Place has been successfully resolved through Apple Maps, the import pipeline enters the standard Capture Flow.
+
+Conceptually:
+
 ```text
-Candidate name
-City hint
-Neighborhood hint
-Category hint
+Verified Apple Maps Identity
+        │
+        ▼
+Personal Relationship
+        │
+        ▼
+Saved Place
 ```
 
-AI must not:
+Import no longer owns the experience.
 
-- Create a Place directly
-- Choose a branch without confirmation
-- Invent an address
-- Import a social-media photo
-- Become required for the standard import flow
+From this point forward, the interaction is identical to manually adding a Place.
 
-The fallback must always remain:
+---
+
+# Standard Capture Flow
+
+After Identity has been resolved, the user records only the personal layer.
+
+Conceptually:
 
 ```text
-Manual MapKit Search
-        ↓
-User Confirmation
+Verified Place
+
+↓
+
+Collection
+
+↓
+
+Favorite
+
+↓
+
+Emotion
+
+↓
+
+Note
+
+↓
+
+Memory Photo
+
+↓
+
+Save
 ```
+
+The import pipeline intentionally reuses the existing Capture Flow.
+
+It should never introduce a second editing experience.
+
+---
+
+# Collection Selection
+
+Every imported Place belongs to exactly one Collection.
+
+Collection selection is required before saving.
+
+The Collection picker should:
+
+- display Collections in user-defined order
+- support creating a new Collection
+- preserve the current Capture Flow
+
+Import should never assign a Collection automatically.
+
+Suggestions may be offered, but the user remains the final authority.
+
+---
+
+# Optional Relationship Fields
+
+Only Collection is required.
+
+The following fields remain optional:
+
+- Favorite
+- Emotion
+- Note
+- Memory Photo
+
+Users should be able to save a Place immediately without filling every field.
+
+The capture experience should remain lightweight.
+
+---
+
+# Duplicate Handling
+
+Before creating the Place, the app checks for an existing Apple Maps Identity.
+
+If the Place already exists:
+
+Open the existing Place.
+
+Do not:
+
+- create another copy
+- merge automatically
+- overwrite Personal Relationships
+
+The imported Candidate has already completed its purpose.
+
+The user's existing Place remains authoritative.
+
+---
+
+# Save Behavior
+
+Saving an imported Place follows exactly the same rules as manual Capture.
+
+A successful save creates:
+
+- Place Identity
+- Personal Relationship
+- Persistence Metadata
+
+The Place immediately becomes part of the user's Personal Map.
+
+Recommendation and Presentation begin only after saving.
+
+Import plays no further role.
+
+---
+
+# Pending Import Cleanup
+
+PendingImport exists only to bridge the Share Extension and the main application.
+
+It is temporary transport data.
+
+After a successful save:
+
+- PendingImport is deleted.
+- Temporary extraction data is discarded.
+- The Personal Map becomes the only source of truth.
+
+If the user cancels the Capture Flow:
+
+PendingImport may be retained temporarily so the import can be resumed.
+
+Expired PendingImports should be removed automatically after a short period.
+
+PendingImport must never appear as user-visible content.
+
+---
+
+# Failure and Recovery
+
+Import should always fail gracefully.
+
+## Weak Candidate
+
+If extraction produces poor search text:
+
+Allow the user to edit the search manually.
+
+---
+
+## No Search Results
+
+If MapKit cannot resolve the Candidate:
+
+Allow the user to revise the search.
+
+Do not create an unresolved Place.
+
+---
+
+## Multiple Branches
+
+If several similar Places exist:
+
+Show the Apple Maps results.
+
+The user selects the correct identity.
+
+---
+
+## User Cancels
+
+If the user leaves the Capture Flow before saving:
+
+No Place is created.
+
+The Personal Map remains unchanged.
+
+---
+
+## Offline
+
+The existing Personal Map remains fully usable.
+
+Creating a new Place may require network access for Apple Maps resolution.
+
+Import should never create a placeholder Place without verified identity.
+
+---
+
+# Relationship Capture Summary
+
+Import ends when a verified Apple Maps Identity enters the standard Capture Flow.
+
+From that point forward:
+
+The user records a Personal Relationship.
+
+The Place is saved.
+
+Recommendation begins.
+
+Presentation follows.
+
+Every imported Place becomes indistinguishable from every manually created Place.
+
+The product should remember the Place—not how it entered the Personal Map.
+
+---
+
+# System Boundaries
+
+The previous sections define how external content becomes a saved Place.
+
+This section defines the boundaries that keep the import system reliable, predictable, and consistent with the rest of PlacePick.
+
+Import should accelerate capture without changing the product model.
 
 ---
 
 # Privacy
 
-PlacePick should minimize imported source data.
+Import should retain only the information necessary to complete the current import.
 
-Rules:
+Temporary import data should never become part of the user's permanent memory unless the user explicitly saves a Place.
 
-- Store only the temporary content needed to complete import.
-- Do not retain entire social-media posts after successful save.
-- Do not upload shared text to a third-party AI service in MVP.
-- Do not import social-media images.
-- Do not preserve source-platform identity as part of the Place.
-- Delete completed or expired `PendingImport` records.
+The system should:
 
-The permanent record should contain the resolved Place and the user's own relationship data—not a copy of the social post.
+- minimize retained shared content
+- avoid storing unnecessary source data
+- delete temporary import data after successful completion
+- expire abandoned imports automatically
 
----
+The permanent Personal Map should contain:
 
-# Performance Requirements
+- verified Place identity
+- Personal Relationship
+- Persistence Metadata
 
-The Share Extension should feel immediate.
-
-Targets:
-
-- Capture the shared payload without unnecessary network work.
-- Avoid blocking on parsing.
-- Open the main app quickly.
-- Pre-fill the search before the user begins typing.
-- Keep the user-confirmation step obvious.
-
-Advanced interpretation must never make the basic flow slower or less reliable.
+It should not contain copies of social-media posts.
 
 ---
 
-# Telemetry Boundaries
+# Performance
 
-MVP does not require analytics for imported social content.
+Import should feel immediate.
 
-If product analytics are added later, measure only coarse events such as:
+The Share Extension should:
 
-- Import started
-- Search pre-filled
-- Place confirmed
-- Import abandoned
-- Manual query correction used
+- capture the shared payload quickly
+- avoid unnecessary parsing
+- avoid blocking network requests
+- hand off to the main application as soon as possible
 
-Do not log:
+Candidate extraction should reduce typing rather than delay capture.
 
-- Full shared text
-- Personal notes
-- Exact memory-photo content
-- Sensitive source payloads
+The standard Capture Flow should begin without noticeable interruption.
+
+---
+
+# Reliability
+
+Import should always produce one of two outcomes.
+
+Either:
+
+```text
+Verified Place
+
+↓
+
+Capture Flow
+```
+
+or:
+
+```text
+No Place Created
+```
+
+The system should never produce:
+
+- partially created Places
+- unresolved Places
+- placeholder identities
+- incomplete Personal Relationships
+
+Import either succeeds completely or leaves the Personal Map unchanged.
+
+---
+
+# Failure Behavior
+
+Weak imports should never prevent users from saving Places manually.
+
+Examples include:
+
+Weak Candidate
+
+↓
+
+Allow manual search.
+
+No Apple Maps results
+
+↓
+
+Allow search refinement.
+
+User cancels
+
+↓
+
+Discard the unfinished import.
+
+Offline
+
+↓
+
+Keep the existing Personal Map available.
+
+Wait until Apple Maps resolution becomes possible.
+
+Import failures should degrade gracefully.
+
+The user should always understand how to continue.
+
+---
+
+# Telemetry
+
+The MVP does not require detailed import analytics.
+
+If analytics are introduced later, they should measure only coarse workflow events.
+
+Examples include:
+
+- Import Started
+- Candidate Generated
+- Apple Maps Place Selected
+- Place Saved
+- Import Cancelled
+
+The product should never log:
+
+- complete shared posts
+- personal notes
+- imported text beyond temporary processing
+- memory photos
+- sensitive source content
+
+Telemetry exists to improve the product rather than reconstruct user content.
 
 ---
 
 # Implementation Boundaries
 
-Claude or another implementation agent must not:
+Future implementations should preserve the following architectural rules.
 
-- Turn import into automatic saving
-- Add a permanent source field without approval
-- Scrape social networks
-- Introduce third-party AI as an MVP dependency
-- Store unresolved posts as Places
-- Require notes or photos during capture
-- Add global search to the main map
-- Treat extracted category as authoritative
-- Skip Apple Maps confirmation
+Import must never:
+
+- save a Place without verified Apple Maps identity
+- bypass user confirmation
+- create unresolved Places
+- create duplicate Personal Relationships automatically
+- merge Places automatically
+- scrape authenticated social-media content
+- depend on third-party AI services
+- introduce a permanent source field without an explicit product decision
+
+Import should remain compatible with the existing Place lifecycle rather than creating a parallel workflow.
 
 ---
 
-# MVP Success Criteria
+# Success Criteria
 
 The import pipeline succeeds when:
 
-1. Sharing from another app is faster than manually copying a place name.
-2. The best obvious phrase is already in the Apple Maps search field.
-3. The user can correct imperfect extraction easily.
-4. The saved result is a reliable Apple Maps place.
-5. Failed extraction never blocks manual saving.
-6. No advanced AI is required for the core experience.
+- sharing is faster than manual entry
+- Candidate extraction reduces typing
+- Apple Maps reliably resolves identity
+- users can easily correct imperfect Candidates
+- imported Places become ordinary saved Places
+- failed imports never block manual capture
+
+The quality of the import system is measured by how naturally it disappears into the normal Capture Flow.
 
 ---
 
-# Final Principle
+# Final Principles
 
-> **Import should remove typing, not remove judgment.**
+> Import bridges the outside world and the Personal Map.
 
-PlacePick helps the user reach the correct Apple Maps result faster.
+> Automation suggests. Apple Maps resolves. The user confirms.
 
-The user remains the final authority on which place is saved.
+> Identity must be verified before a Personal Relationship can exist.
+
+> Every imported Place becomes an ordinary Place.
+
+> The product remembers Places, not their sources.
+
+> Import should remove friction—not user judgment.

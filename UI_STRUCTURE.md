@@ -1,53 +1,110 @@
 # PlacePick — UI_STRUCTURE.md
 
-Version: 4.2
+Version: 5.0
 
 ---
 
-## 1. Purpose
+# Purpose
 
-This document defines PlacePick's user-facing structure and interaction patterns.
+This document defines how users interact with PlacePick.
 
-PlacePick should feel like **Apple Maps with a personal memory layer**.
+While other documents define the product's concepts, this document defines how those concepts become a coherent user experience.
 
-The map is always the primary interface. PlacePick should not recreate search, navigation, business information, or other functionality already owned by Apple Maps.
+It specifies:
 
-Collections are the user's own way of organizing that personal map.
+- Workspace structure
+- Interaction patterns
+- Primary user flows
+- Presentation behavior
+
+The goal is not to describe individual screens.
+
+The goal is to define a consistent interaction model.
 
 ---
 
-## 2. Core UI Principles
+# Relationship to Other Documents
 
-### 2.1 Map First
+This document should be read together with:
 
-The map is the product.
+- MVP.md
+- COLLECTIONS.md
+- DATA_MODEL.md
+- RECOMMENDATION_MODEL.md
 
-The map should remain visible whenever possible and should not be replaced by a separate browsing hierarchy.
+Responsibilities are divided as follows.
 
-### 2.2 Native First
+MVP.md defines:
 
-Prefer:
+- Product philosophy
+- Core user experience
+- Product scope
 
-- Native MapKit behavior
-- Native SwiftUI sheets
+COLLECTIONS.md defines:
+
+- How users organize their Personal Map
+
+DATA_MODEL.md defines:
+
+- Place Identity
+- Personal Relationship
+- Persistence
+
+RECOMMENDATION_MODEL.md defines:
+
+- How Relationships become Importance
+
+This document defines:
+
+- How users interact with those concepts
+- How Recommendation becomes presentation
+- How interactions remain consistent throughout the product
+
+UI should never redefine product concepts.
+
+It presents them.
+
+---
+
+# Core UI Principles
+
+## 1. Map First
+
+The map is the primary workspace.
+
+Users should spend most of their time interacting with the map rather than navigating between pages.
+
+Whenever possible, the map remains visible while secondary interfaces appear as native sheets or cards.
+
+---
+
+## 2. Native First
+
+Prefer platform conventions whenever they provide an excellent experience.
+
+Examples include:
+
+- MapKit interaction
+- Native sheets
 - Native gestures
-- Native user-location presentation
 - SF Symbols
+- System typography
 - System colors
-- Default platform animations
+- Standard animations
 
-Do not introduce custom controls when a clear native control already exists.
+Avoid custom controls when native behavior already feels familiar.
 
-### 2.3 Personal Layer Only
+---
+
+## 3. Personal Layer Only
 
 Apple Maps owns:
 
-- Place identity
-- Place name
-- Coordinates
+- Place Identity
 - Search
 - Navigation
 - Business information
+- Geographic knowledge
 
 PlacePick owns:
 
@@ -55,256 +112,254 @@ PlacePick owns:
 - Favorite
 - Emotion
 - Note
-- Memory photo
+- Memory Photo
 
-Current location is map context. It is not stored Place data.
-
-### 2.4 Immediate Editing
-
-Relationship fields should be editable directly from the Place Detail Card.
-
-There is no dedicated full-screen edit mode for ordinary relationship editing.
-
-### 2.5 Identity Is Different from Relationship
-
-Editing the user's relationship with a Place and replacing the Place's real-world identity are fundamentally different operations.
-
-Relationship editing should be lightweight.
-
-Replacing Place identity should be explicit and controlled.
-
-### 2.6 Collections Are User-Owned
-
-Collections are not fixed place categories.
-
-They are the user's own organizational structure.
-
-The interface should never imply that a Collection objectively describes what a Place is.
+The interface should ask users only for information Apple Maps cannot know.
 
 ---
 
-# 3. Main Map
+## 4. Relationship First
 
-## 3.1 Map Content
+Most interactions edit the user's relationship with a Place.
 
-The map displays only Places saved by the user.
+Examples include:
 
-It does not attempt to reproduce the full Apple Maps point-of-interest layer.
+- changing Collection
+- recording Emotion
+- writing Notes
+- marking Favorite
+- adding a Memory Photo
 
-## 3.2 Map Controls
+These interactions should feel immediate and lightweight.
 
-Preserve native behavior and controls where appropriate:
+---
 
-- Pan
-- Zoom
-- Rotation
-- Compass
-- Current-location indicator
-- Apple Maps attribution
+## 5. Identity Is Explicit
 
-## 3.3 Current Location
+Changing a Place's real-world identity is fundamentally different from editing a personal relationship.
 
-The map displays the user's current location using MapKit's native user-location presentation.
+Identity changes should always be:
 
-This may include, when available:
+- explicit
+- deliberate
+- reversible whenever possible
 
-- Blue location dot
-- Accuracy radius
-- Device heading indicator
-- Live location updates while the app is in use
+Identity correction should never feel like ordinary editing.
 
-PlacePick should not design a custom user-location marker.
+---
 
-### Location Control
+## 6. One Concept, One Interaction
 
-MVP does not include a dedicated recenter control.
+Each user action should have one clear responsibility.
 
-The user locates themselves by reading the native blue dot and panning/zooming manually, the same way they would on any native map surface.
+Examples:
 
-A native recenter control (e.g. `MapUserLocationButton`) may be added in a later pass once its behavior can be verified reliably; it is not required for MVP.
+Tap Collection
 
-### Permission Behavior
+→ Change Collection
 
-Request **When In Use** location authorization only when location is first needed — in practice, the first time the map appears, rather than immediately at process launch.
+Tap Emotion
 
-Location permission is optional.
+→ Change Emotion
 
-If permission is denied:
+Tap Favorite
 
-- The map remains usable.
-- Saved Places remain fully accessible.
-- Collection browsing remains available.
-- The blue dot simply does not appear.
+→ Toggle Favorite
 
-Suggested permission explanation:
+Tap Note
 
-> PlacePick uses your location to show where you are relative to the places you saved.
+→ Edit Note
 
-### Location Rules
+Interactions should not mix unrelated concepts.
 
-PlacePick does not:
+---
 
-- Request Always Location permission
-- Track location in the background
-- Store location history
-- Save the user's current location as Place data
-- Attach movement history to Places
-- Force the map to remain centered after the user begins browsing
-- Make recommendation directly dependent on live user location
+# Interaction Philosophy
 
-### Initial Viewport
-
-When a useful previous viewport exists, restore it.
-
-When no meaningful viewport exists and location is available, the user's current location may be used as the initial viewport.
-
-Opening the app should not repeatedly pull the map away from a region the user was intentionally browsing.
-
-> Always show where the user is, but move the map only when the user asks.
-
-## 3.4 Place Symbols
-
-Each saved Place uses the SF Symbol of its Collection.
-
-Recommendation may affect prominence, but never availability.
-
-Recommendation may influence:
-
-- Symbol size
-- Label visibility
-- Cluster release priority
-
-Recommendation must never:
-
-- Hide a saved Place
-- Change the selected Collection
-- Move a Place into another Collection
-- Move the map automatically
-- Modify stored Place data
-
-## 3.5 Collection Bar
-
-A horizontally scrollable Collection Bar appears over the map.
+PlacePick is designed around one continuous workspace.
 
 Conceptually:
 
 ```text
-All   Food   Beaches   Date   Japan 2027   …
+             Map
+              │
+     ┌────────┼────────┐
+     │        │        │
+Collection  Place   Current
+   Bar      Detail  Location
 ```
 
-Each item may show:
+Users should rarely feel that they have "left" the map.
 
-- Collection icon
-- Collection name
+Instead, interactions temporarily layer on top of the workspace before naturally returning to it.
 
-`All` is a map view, not a stored Collection.
-
-Selecting a Collection shows only Places assigned to that Collection.
-
-Selecting `All` shows Places from every Collection.
-
-The Collection Bar follows the user's Collection order.
-
-## 3.6 Collection Bar Behavior
-
-The Collection Bar should:
-
-- Remain lightweight
-- Preserve as much map visibility as possible
-- Make the selected state clear
-- Support horizontal scrolling
-- Avoid looking like a traditional tab bar
-
-Changing the selected Collection changes map visibility only.
-
-It does not modify stored Place data or recommendation scores.
-
-## 3.7 Nearby Discovery
-
-PlacePick does not need a separate Nearby page in MVP.
-
-The combination of:
-
-- Current-location indicator
-- Location control
-- Current map viewport
-- Collection Bar
-- Saved Place symbols
-
-is the Nearby experience.
-
-Example flow:
-
-```text
-Tap Current Location
-→ Select Food
-→ See saved food Places around the current viewport
-→ Open one Place
-→ Open in Apple Maps
-```
-
-The viewport defines what "nearby" means.
-
-## 3.8 Manage Collections Entry Point
-
-The end of the Collection Bar should provide a lightweight way to open **Manage Collections**.
-
-A suitable native control may be:
-
-- An ellipsis button
-- An edit button
-- A context menu
-
-The control should not compete visually with the map.
+The map remains the user's anchor throughout the product.
 
 ---
 
-# 4. Add Place
+# Main Workspace
 
-## 4.1 Entry Point
+PlacePick is fundamentally a single-workspace application.
 
-The user taps the **+** button from the map.
-
-## 4.2 Add Place User Flow
+Conceptually:
 
 ```text
-┌──────────────────┐
-│       Map        │
-└────────┬─────────┘
-         │
-      Tap "+"
-         │
-         ▼
-┌────────────────────────────┐
-│ Apple Maps-style Search UI │
-└────────────┬───────────────┘
-             │
-     Live MapKit Suggestions
-             │
-             ▼
-  User selects one MapKit result
-             │
-             ▼
-┌────────────────────────────┐
-│ Edit Personal Information  │
-│ • Collection               │
-│ • Favorite                 │
-│ • Emotion                  │
-│ • Note                     │
-│ • Memory Photo             │
-└────────────┬───────────────┘
-             │
-           Save
-             │
-             ▼
-       Return to Map
+┌──────────────────────────────────────┐
+│ Collection Bar                       │
+├──────────────────────────────────────┤
+│                                      │
+│              Map                     │
+│                                      │
+│     Current Location                 │
+│     Saved Places                     │
+│                                      │
+│                              +       │
+└──────────────────────────────────────┘
 ```
 
-## 4.3 Search UI
+Everything else in the product originates from this workspace.
 
-The search experience should closely follow Apple Maps.
+Users should always be able to understand where they are without navigating through multiple levels of pages.
 
-The search field accepts:
+---
+
+# Workspace Components
+
+The primary workspace contains:
+
+- Map
+- Collection Bar
+- Saved Place symbols
+- Current location indicator
+- Add Place button
+
+Secondary interfaces appear temporarily as:
+
+- Sheets
+- Bottom cards
+- Pickers
+- Context menus
+- Confirmation dialogs
+
+The product intentionally avoids introducing a permanent multi-tab navigation structure.
+
+---
+
+# Primary Entry Points
+
+The workspace exposes only a small number of primary actions.
+
+These include:
+
+- Select Collection
+- Select Place
+- Add Place
+- Manage Collections
+
+All other interactions originate from one of these entry points.
+
+Keeping the number of primary actions intentionally small helps preserve the simplicity of the map experience.
+
+---
+
+# Part 1 Summary
+
+PlacePick is a map-centered application.
+
+The map is not one screen among many.
+
+It is the user's primary workspace.
+
+Most interactions modify the user's relationship with Places while remaining anchored to that workspace.
+
+The interface should remain native, lightweight, and focused on the personal layer rather than the geographic layer.
+
+---
+
+# Core Place Flows
+
+Every interaction with a Place belongs to one of five flows:
+
+```text
+Capture
+
+↓
+
+Review
+
+↓
+
+Maintain
+
+↓
+
+Correct
+
+↓
+
+Delete
+```
+
+Each flow has a single responsibility.
+
+Users should never edit multiple concepts simultaneously.
+
+---
+
+# Capture Flow
+
+The Capture Flow creates a new Place in the user's Personal Map.
+
+Conceptually:
+
+```text
+Map
+
+↓
+
+Tap "+"
+
+↓
+
+MapKit Search
+
+↓
+
+Select Place
+
+↓
+
+Choose Collection
+
+↓
+
+Edit Personal Relationship
+
+↓
+
+Save
+
+↓
+
+Return to Map
+```
+
+The flow intentionally separates:
+
+1. Selecting a real-world Place.
+2. Recording a personal relationship.
+
+The first belongs to Apple Maps.
+
+The second belongs to PlacePick.
+
+---
+
+# Place Selection
+
+Place selection always uses MapKit.
+
+Users may search using:
 
 - Place names
 - Addresses
@@ -312,499 +367,843 @@ The search field accepts:
 
 Search suggestions come directly from MapKit.
 
-PlacePick does not build its own search index or custom suggestion engine.
+A Place is created only after the user selects one resolved MapKit result.
 
-## 4.4 Search Rule
+Users never create Places from:
 
-A Place can only be created by selecting a MapKit search result.
+- free text
+- manually entered coordinates
+- unresolved imported text
 
-Users never create a Place from:
+PlacePick never asks users to describe a Place.
 
-- Free text
-- Arbitrary coordinates
-- A manually typed place name
-- Unresolved imported text
-
-> PlacePick does not ask the user to describe a Place. It asks the user to select one.
-
-## 4.5 After Selection
-
-Once the user selects a MapKit result, PlacePick already knows:
-
-- Place name
-- Coordinates
-- Apple Maps identifier
-- MapKit-derived metadata, when available
-
-The user should not be asked to reconfirm or manually edit these facts.
-
-The user immediately edits only the personal layer.
-
-## 4.6 Collection Selection
-
-Every new Place must be assigned to exactly one Collection before saving.
-
-The Collection picker shows the user's Collections in user-defined order.
-
-It should also provide a lightweight **New Collection** action.
-
-Creating a Collection from this flow should return the user directly to the Place draft with the new Collection selected.
-
-The app must not require the user to leave the Add Place flow and manage Collections elsewhere first.
-
-## 4.7 Save Behavior
-
-On Save:
-
-1. Confirm that one Collection is selected.
-2. Check whether the selected Apple Maps identifier already exists.
-3. If it does not exist, create the Place.
-4. If it already exists, open the existing Place instead of creating a duplicate.
-
-The MVP does not offer **Save Another** for the same real-world Place.
+It asks them to choose one.
 
 ---
 
-# 5. Place Detail Card
+# Collection Selection
 
-## 5.1 Purpose
+Every Place belongs to exactly one Collection.
 
-The Place Detail Card represents the user's relationship with a Place.
+Collection selection occurs before saving.
 
-It is not a business listing.
+The Collection picker should:
 
-## 5.2 Content
+- follow user-defined order
+- clearly indicate the current selection
+- allow creating a new Collection without leaving the Capture Flow
 
-The card may contain:
+The user should never be forced to abandon the Capture Flow in order to organize Collections.
 
-- Memory photo
-- Place name
+---
+
+# Personal Relationship
+
+After selecting a Place, the user immediately records only the personal layer.
+
+Relationship fields include:
+
 - Collection
 - Favorite
 - Emotion
 - Note
-- Open in Apple Maps
-- More menu
+- Memory Photo
 
-It should not prioritize:
+Apple Maps identity is already known.
 
-- Business hours
-- Reviews
-- Phone number
-- Website
-- Full address
-- Navigation instructions
-
-Apple Maps already owns those functions.
-
-## 5.3 Conceptual Layout
-
-```text
-┌──────────────────────────────────────┐
-│ Optional Memory Photo                │
-├──────────────────────────────────────┤
-│ Place Name                       ⋯   │
-│ Collection icon + name               │
-│                                      │
-│ ☆ / ★        😐 / 😊 / 🤩           │
-│                                      │
-│ Personal note                        │
-│                                      │
-│ Open in Apple Maps                   │
-└──────────────────────────────────────┘
-```
-
----
-
-# 6. Direct Relationship Editing
-
-There is no dedicated edit screen for ordinary relationship fields.
-
-## 6.1 Interactions
-
-| Field | Interaction |
-|---|---|
-| Note | Tap note to edit |
-| Emotion | Tap emoji to open picker |
-| Favorite | Tap star to toggle |
-| Collection | Tap Collection to open picker |
-| Memory photo | Tap photo area to add, replace, or remove |
-| Delete | Use the More menu |
-
-Editing should feel immediate and lightweight.
-
-## 6.2 Changing Collection
-
-Changing a Place's Collection is a direct relationship edit.
-
-The Collection picker should:
-
-- Show all existing Collections
-- Preserve the user's Collection order
-- Clearly mark the current Collection
-- Offer **New Collection**
-
-Selecting a different Collection applies immediately or through one lightweight confirmation action, depending on the native picker pattern used.
-
-Changing Collection must not affect:
-
-- Place identity
-- Favorite
-- Emotion
-- Note
-- Memory photo
-- Recommendation score
-
-## 6.3 Editing Scope
-
-Direct editing applies only to the user's relationship fields.
-
-The following are not freely editable:
+The user should never manually edit:
 
 - Place name
 - Coordinates
 - Apple Maps identifier
 
-These fields belong to the selected Apple Maps identity.
+---
+
+# Duplicate Handling
+
+Before creating a new Place:
+
+The app checks whether the selected Apple Maps identifier already exists.
+
+If no matching Place exists:
+
+Create the new Place.
+
+If a matching Place already exists:
+
+Open the existing Place instead.
+
+The MVP intentionally does not support saving the same real-world Place multiple times.
 
 ---
 
-# 7. Manage Collections
+# Place Detail
 
-## 7.1 Purpose
-
-Manage Collections allows users to shape the organizational structure of their own map.
-
-It should be presented as a native sheet rather than as a new primary page.
-
-## 7.2 Collection List
-
-The sheet displays Collections in current user-defined order.
-
-Each row may contain:
-
-- SF Symbol
-- Collection name
-- Reorder handle
-- More or edit action
+After a Place has been created, interactions occur through the Place Detail Card.
 
 Conceptually:
 
 ```text
-Manage Collections
+Memory Photo
 
-≡  fork.knife       Food
-≡  beach.umbrella   Beaches
-≡  heart            Date
-≡  airplane         Japan 2027
+↓
 
-+ New Collection
+Place Name
+
+↓
+
+Collection
+
+↓
+
+Favorite
+
+↓
+
+Emotion
+
+↓
+
+Note
+
+↓
+
+Open in Apple Maps
 ```
 
-## 7.3 Create Collection
+The Place Detail Card represents the user's relationship with the selected Place.
 
-Creating a Collection requires:
+It is not a business listing.
 
-- Name
-- SF Symbol
+Apple Maps remains responsible for:
 
-A new Collection should receive a stable internal ID.
-
-It should be placed at the end of the current Collection order unless the user explicitly reorders it.
-
-## 7.4 Rename Collection
-
-Users may rename any Collection.
-
-Renaming a Collection updates how it appears everywhere without changing the Places assigned to it.
-
-## 7.5 Change Collection Icon
-
-Users may choose a different supported SF Symbol.
-
-Changing the icon updates the Collection Bar, map symbols, pickers, and Place Detail Cards.
-
-It must not modify any Place relationship other than its visual Collection reference.
-
-## 7.6 Reorder Collections
-
-Users may reorder Collections through a native drag interaction.
-
-The Collection Bar follows the saved order.
-
-`All` remains fixed at the beginning and is not part of the user-defined order.
-
-## 7.7 Delete Collection
-
-A Collection containing no Places may be deleted after lightweight confirmation.
-
-A Collection containing Places cannot be deleted immediately.
-
-The user must first choose a destination Collection for those Places.
-
-Conceptual flow:
-
-```text
-Delete "Beaches"?
-
-12 Places belong to this Collection.
-
-Move Places to:
-[ Choose Collection ]
-
-Cancel                  Move and Delete
-```
-
-Rules:
-
-- Every affected Place moves to one selected destination Collection.
-- Reassignment and deletion occur atomically.
-- The destination cannot be the Collection being deleted.
-- The app must never leave a Place without a Collection.
-- The app must never silently choose a destination.
-- There is no automatic move to an `Other` Collection.
-
-## 7.8 Empty Collection Set
-
-The app should always allow the user to create a Collection before adding a Place.
-
-The last remaining Collection may be deleted only when it contains no Places.
-
-When no Collections remain, the Add Place flow must require the user to create one before saving.
-
-Suggested Collections may be offered as optional starting points, but must not be silently recreated after the user deletes them.
+- navigation
+- business information
+- reviews
+- operating hours
+- contact information
 
 ---
 
-# 8. Replace Place
+# Relationship Editing Flow
 
-## 8.1 Purpose
+Relationship editing is lightweight.
 
-Replace Place is used when the user selected the wrong Apple Maps result.
+Users edit information directly from the Place Detail Card.
 
-Examples:
+Examples include:
 
-- Wrong restaurant branch
-- Wrong building
-- Wrong business with a similar name
-- Nearby location selected accidentally
+Tap Collection
 
-This is not ordinary editing.
+→ Change Collection
 
-It replaces the real-world identity attached to the existing personal relationship.
+Tap Favorite
 
-## 8.2 Entry Point
+→ Toggle Favorite
 
-The user opens the **More** menu from the Place Detail Card.
+Tap Emotion
+
+→ Choose Emotion
+
+Tap Note
+
+→ Edit Note
+
+Tap Memory Photo
+
+→ Add, replace, or remove
+
+Relationship editing should never require a dedicated full-screen edit mode.
+
+The interaction should feel immediate.
+
+---
+
+# Identity Correction Flow
+
+Identity correction is fundamentally different from relationship editing.
+
+Relationship answers:
+
+> What does this Place mean to me?
+
+Identity answers:
+
+> Which real-world Place is this?
+
+Identity correction is entered from the More menu.
+
+Conceptually:
 
 ```text
-⋯
+Place Detail
+
+↓
+
+More
+
+↓
 
 Replace Place
-Delete
-```
 
-Collection editing remains available through direct tap and does not need to be duplicated in the More menu.
+↓
 
-## 8.3 Replace Place Flow
+MapKit Search
 
-```text
-Existing Place Detail
-        │
-      Tap "⋯"
-        │
-        ▼
-   Replace Place
-        │
-        ▼
-Apple Maps-style Search
-        │
-        ▼
-Select a new MapKit result
-        │
-        ▼
+↓
+
+Select New Place
+
+↓
+
 Duplicate Check
-        │
-   ┌────┴────┐
-   │         │
- New       Existing
-   │         │
-   ▼         ▼
-Confirm    Open Existing
-Replace
-   │
-   ▼
-Return to Place Detail
+
+↓
+
+Confirm
+
+↓
+
+Return to Detail
 ```
 
-## 8.4 Reused Search UI
-
-Replace Place reuses the same MapKit search experience used by Add Place.
-
-Do not create a second search implementation.
-
-## 8.5 Data Preservation
-
-Replacing Place identity preserves:
-
-- Collection
-- Favorite
-- Emotion
-- Note
-- Memory photo
-
-Replacing Place identity updates:
+Identity correction updates:
 
 - Place name
 - Coordinates
 - Apple Maps identifier
 - MapKit-derived metadata
 
-The operation should feel like correcting the selected location, not creating a new personal memory.
+Identity correction preserves:
 
-## 8.6 Duplicate Result During Replacement
+- Collection
+- Favorite
+- Emotion
+- Note
+- Memory Photo
 
-If the replacement target already exists as another saved Place:
+Correcting identity should feel like fixing a mistaken map reference rather than creating a new memory.
 
-- Do not merge automatically
-- Do not create a duplicate
-- Open the existing Place
-- Preserve the current Place until the user explicitly deletes or changes it
+---
 
-Automatic merging is out of scope for MVP because it could silently destroy or combine personal data.
+# Delete Flow
 
-## 8.7 Confirmation
+Delete permanently removes a Place from the Personal Map.
 
-Because Replace Place changes identity, show a lightweight confirmation before applying it.
+Deletion is available from the More menu.
 
-Example:
+The operation requires confirmation.
+
+Deleting a Place removes:
+
+- Identity
+- Personal Relationship
+
+Deleting a Place never deletes its Collection.
+
+Replace Place should never be implemented as:
+
+Delete
+
+↓
+
+Create
+
+from the user's perspective.
+
+Identity correction and deletion are separate user intentions.
+
+---
+
+# Open in Apple Maps
+
+PlacePick intentionally delegates geographic functionality to Apple Maps.
+
+The Place Detail Card provides an explicit:
+
+Open in Apple Maps
+
+action.
+
+Apple Maps remains responsible for:
+
+- directions
+- navigation
+- live traffic
+- business information
+- contact details
+- reviews
+
+PlacePick should never duplicate these capabilities.
+
+---
+
+# Part 2 Summary
+
+The lifecycle of a Place consists of five distinct flows:
+
+Capture
+
+↓
+
+Review
+
+↓
+
+Maintain Relationship
+
+↓
+
+Correct Identity
+
+↓
+
+Delete
+
+Each flow has one responsibility.
+
+Relationship editing remains lightweight.
+
+Identity correction remains explicit.
+
+Geographic knowledge belongs to Apple Maps.
+
+Personal meaning belongs to PlacePick.
+
+
+---
+
+# Organization & Attention Presentation
+
+After Places have been saved, the primary experience becomes browsing and rediscovering the user's Personal Map.
+
+Two systems shape this experience:
+
+- Collections organize Places.
+- Recommendation guides attention.
+
+Neither system changes the underlying Place data.
+
+---
+
+# Collection Browsing
+
+Collections are the primary way users browse their Personal Map.
+
+The Collection Bar appears above the map.
+
+Conceptually:
 
 ```text
-Replace this Place with "Din Tai Fung — Valley Fair"?
-
-Your Collection, note, emotion, favorite, and memory photo will be kept.
+All   Food   Coffee   Hiking   Japan 2027   …
 ```
 
-Actions:
+Each Collection displays:
 
-- Replace
-- Cancel
+- Collection icon
+- Collection name
 
----
+`All` is a map view.
 
-# 9. Delete Place
+It is not a stored Collection.
 
-Delete is available from the More menu.
+Selecting a Collection filters the visible Places shown on the map.
 
-Deletion should require confirmation.
+Changing the selected Collection never modifies:
 
-Deleting removes the Place and its personal relationship data.
+- Place Identity
+- Personal Relationship
+- Recommendation
 
-It does not delete the Collection containing it.
-
-Replace Place should never be implemented as delete-and-recreate in the UI.
-
----
-
-# 10. Open in Apple Maps
-
-PlacePick should provide an explicit action to open the selected Place in Apple Maps.
-
-Apple Maps handles:
-
-- Directions
-- Navigation
-- Business details
-- Hours
-- Reviews
-- Contact information
-
-PlacePick should not duplicate these features.
+Collections organize visibility only.
 
 ---
 
-# 11. Share Import Handoff
+# Collection Bar
 
-The Share Extension extracts enough information to resolve a Place through MapKit.
+The Collection Bar should remain lightweight.
 
-The main app opens automatically and presents the same Add Place search and selection flow.
+It should:
 
-Imported text must not create a Place directly.
+- preserve map visibility
+- support horizontal scrolling
+- clearly indicate the selected Collection
+- avoid looking like a traditional tab bar
 
-All import paths converge on user selection of one MapKit result and one Collection.
+The Collection order follows the user's own ordering.
+
+The interface should never imply that Collections are global place categories.
+
+They are personal organization.
 
 ---
 
-# 12. Empty States
+# Manage Collections
 
-## 12.1 No Saved Places
+Collection management is presented as a lightweight sheet rather than a primary page.
 
-Prefer:
+Users may:
+
+- Create Collection
+- Rename Collection
+- Change Collection Icon
+- Reorder Collections
+- Delete Collection
+
+The sheet should preserve the feeling that users are organizing one Personal Map rather than managing a separate database.
+
+---
+
+# Collection Deletion
+
+Deleting a Collection must preserve every Place.
+
+If a Collection still contains Places:
+
+The user chooses another Collection.
+
+Conceptually:
+
+```text
+Delete "Coffee"?
+
+15 Places belong to this Collection.
+
+Move Places to:
+
+[ Choose Collection ]
+
+Cancel        Move and Delete
+```
+
+Rules:
+
+- Every Place moves exactly once.
+- Reassignment and deletion occur atomically.
+- The destination Collection cannot be the Collection being deleted.
+- No Place may exist without a Collection.
+
+The product should never invent an automatic destination.
+
+---
+
+# Attention Presentation
+
+Recommendation determines Importance.
+
+Presentation determines how Importance appears on the map.
+
+Conceptually:
+
+```text
+Relationship
+
+↓
+
+Recommendation
+
+↓
+
+Importance
+
+↓
+
+Presentation
+
+↓
+
+Map
+```
+
+Presentation may use Importance to influence:
+
+- symbol prominence
+- label visibility
+- annotation priority
+- cluster release priority
+
+Presentation must never modify Recommendation itself.
+
+---
+
+# Map Presentation
+
+Presentation adapts continuously to the viewing context.
+
+Context includes:
+
+- current viewport
+- zoom level
+- annotation density
+
+Presentation may:
+
+- enlarge important symbols
+- reduce label clutter
+- cluster nearby Places
+- simplify crowded regions
+
+These changes improve readability.
+
+They never change Importance.
+
+---
+
+# Nearby Discovery
+
+Nearby is not a separate feature.
+
+It naturally emerges from three concepts:
+
+- current viewport
+- current Collection
+- saved Places
+
+Conceptually:
+
+```text
+Current Viewport
+
++
+
+Selected Collection
+
++
+
+Saved Places
+
+↓
+
+Nearby Discovery
+```
+
+Users discover nearby Places simply by exploring the map they are already viewing.
+
+---
+
+# Current Location
+
+Current location provides spatial context.
+
+It is not Place data.
+
+When permission is granted, the map uses the native MapKit user-location presentation.
+
+This may include:
+
+- blue location dot
+- accuracy radius
+- heading indicator
+
+PlacePick should not create a custom location marker.
+
+Current location is never:
+
+- stored
+- attached to Places
+- included in Recommendation
+- recorded as history
+
+It only helps users understand where they are relative to their saved Places.
+
+---
+
+# Initial Viewport
+
+When the app launches:
+
+If a previous viewport exists:
+
+Restore it.
+
+Otherwise:
+
+If location is available:
+
+Use the current location as the initial viewport.
+
+The map should never repeatedly pull users away from a region they intentionally chose to explore.
+
+The user's browsing context should always take priority over automatic recentering.
+
+---
+
+# Part 3 Summary
+
+Collections organize the Personal Map.
+
+Recommendation guides attention.
+
+Presentation makes attention visible.
+
+The map remains the primary browsing experience.
+
+Users discover nearby Places simply by exploring their own map rather than navigating through separate pages.
+
+
+---
+
+# System States & External Entry
+
+The previous sections describe normal interaction with the Personal Map.
+
+This section defines how PlacePick behaves at its boundaries:
+
+- entering the app
+- importing content
+- handling missing data
+- handling unavailable system services
+
+These situations should feel consistent with the rest of the product.
+
+---
+
+# Share & Import
+
+The Share Extension provides an alternative entry into the Capture Flow.
+
+Conceptually:
+
+```text
+Social App
+
+↓
+
+Share
+
+↓
+
+PlacePick
+
+↓
+
+Extract Text
+
+↓
+
+MapKit Search
+
+↓
+
+User Selects Place
+
+↓
+
+Choose Collection
+
+↓
+
+Save
+
+↓
+
+Return to Map
+```
+
+Import should never bypass Place selection.
+
+Imported content suggests a Place.
+
+The user confirms the Place.
+
+Every entry path ultimately converges on the same Capture Flow.
+
+---
+
+# Location Permission
+
+Location permission exists only to provide spatial context.
+
+The app requests **When In Use** authorization only when location first becomes useful.
+
+For most users, this occurs when the map is first displayed.
+
+Location permission remains optional.
+
+If permission is denied:
+
+- the map remains usable
+- saved Places remain accessible
+- Collections continue to function
+- Recommendation behaves normally
+
+Only the current-location indicator becomes unavailable.
+
+---
+
+# Current Location Behavior
+
+Current location belongs to the workspace.
+
+It never becomes Place data.
+
+The app does not:
+
+- request Always authorization
+- track background location
+- store location history
+- attach location history to Places
+
+The blue location indicator exists only to answer one question:
+
+> Where am I relative to my saved Places?
+
+---
+
+# Initial Launch Behavior
+
+The app should preserve browsing continuity whenever possible.
+
+On launch:
+
+If a previous viewport exists:
+
+Restore it.
+
+Otherwise:
+
+If location is available:
+
+Use the user's current location.
+
+The app should never repeatedly override an intentional browsing region.
+
+The user's last browsing context has higher priority than automatic centering.
+
+---
+
+# Empty States
+
+Empty states should encourage progress rather than explain missing functionality.
+
+## No Saved Places
+
+Suggested message:
 
 > Save places you want to remember.
 
-The primary action should begin Add Place.
+Primary action:
 
-## 12.2 Empty Selected Collection
+Add Place
 
-Prefer:
+---
+
+## Empty Collection
+
+Suggested message:
 
 > No places in this Collection yet.
 
 The map remains visible.
 
-The user may:
+Users may:
 
-- Add a Place
-- Switch Collections
+- Add Place
+- Switch Collection
 - Manage Collections
 
-## 12.3 No Collections
+---
 
-Prefer:
+## No Collections
+
+Suggested message:
 
 > Create your first Collection to start building your map.
 
-Suggested Collections may be offered, but the user remains in control.
+Suggested Collections may be offered.
 
-## 12.4 Location Unavailable
+The user always remains in control.
 
-When location is unavailable, avoid alarming language.
+---
 
-Prefer:
+## Location Unavailable
+
+Suggested message:
 
 > Current location is unavailable.
 
-The map and saved Places remain usable.
+Avoid alarming language.
+
+The Personal Map continues functioning normally.
 
 ---
 
-# 13. Recommendation and Location
+# Cancellation Behavior
 
-Recommendation remains based on the current map viewport, not directly on live user location.
+Users should be able to abandon any incomplete flow without unintended side effects.
 
-The relationship is:
+Examples include:
 
-```text
-Current Location (when available)
-→ May seed the initial viewport
+Cancel Capture
 
-Recommendation
-→ Evaluates Places relative to the current viewport
-```
+↓
 
-This preserves correct behavior when the user browses a distant city.
+No Place created
 
-Current location should never automatically override intentional map exploration.
+Cancel Replace Place
+
+↓
+
+Existing Place remains unchanged
+
+Dismiss Collection Picker
+
+↓
+
+Collection unchanged
+
+Dismiss Emotion Picker
+
+↓
+
+Emotion unchanged
+
+Partial interactions should never leave inconsistent data.
 
 ---
 
-# 14. Final UI Principles
+# System Invariants
 
-> Whenever Apple already knows the answer, PlacePick should not ask the user again.
+Every interaction should preserve the following rules.
 
-> Collections organize the user's map; they do not classify the world.
+A Place always belongs to exactly one Collection.
 
-> The blue dot shows where the user is. Saved Places show what matters around them.
+Recommendation never edits data.
 
-PlacePick should ask only for the personal information Apple cannot know.
+Presentation never changes Recommendation.
+
+Identity correction preserves Personal Relationship.
+
+Relationship editing never changes Identity.
+
+Deleting a Place never deletes its Collection.
+
+Deleting a Collection never deletes Places.
+
+Every flow should either:
+
+complete successfully
+
+or
+
+leave the existing Personal Map unchanged.
+
+---
+
+# Final UI Principles
+
+> The map is the user's workspace.
+
+> Apple Maps owns geography.
+
+> PlacePick owns personal meaning.
+
+> Users organize Places through Collections.
+
+> Recommendation guides attention, not behavior.
+
+> Every interaction should modify exactly one concept.
+
+> The user should always know where they are, what they are editing, and why.
+
+> The interface should remain calm, native, and focused on the user's Personal Map.

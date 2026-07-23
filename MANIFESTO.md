@@ -1,10 +1,14 @@
 # PlacePick — MANIFESTO.md
 
+Version: 5.0
+
+---
+
 # This is my map of the world.
 
 Apple Maps helps me get there.
 
-**PlacePick reminds me why I wanted to go.**
+**PlacePick reminds me why it mattered.**
 
 ---
 
@@ -12,61 +16,82 @@ Apple Maps helps me get there.
 
 The world does not need another map application.
 
-Apple Maps and Google Maps already solve navigation, search, directions, addresses, business information, and reviews.
+Apple Maps and Google Maps already solve:
 
-PlacePick exists to solve something they never can:
+- navigation
+- search
+- directions
+- addresses
+- business information
 
-> **Personal memory.**
+PlacePick exists to solve something they never can.
 
-Not where a place is.
+> **Personal meaning.**
 
-But **why it mattered to me.**
+Not where a Place is.
+
+But why it matters.
 
 PlacePick is a personal memory layer built on top of Apple Maps.
 
 ---
 
-# Our Principles
+# What We Believe
 
-## The Map Is The Product
+## Apple Maps Owns the World
 
-The map is the app.
+Apple Maps understands the objective world.
 
-Everything happens on one persistent map.
+It knows:
 
-Users should always feel they are exploring **their own world**.
+- where a Place is
+- what it is called
+- how to get there
 
-## Never Compete With Apple Maps
+PlacePick should never compete with that knowledge.
 
-Apple Maps provides:
+Instead, it should build upon it.
 
-- Navigation
-- Search
-- Address
-- Business hours
-- Reviews
-- Business photos
-- Directions
+---
 
-PlacePick provides:
+## PlacePick Owns Personal Meaning
 
-- Personal memories
-- Personal notes
-- Personal emotions
-- Personal photos
+A Place is more than a coordinate.
 
-## Memories Are The Product
+It becomes meaningful because of the user's own experiences.
 
-The most valuable information is:
+PlacePick remembers:
 
-- Why I saved this place.
-- What I want to remember.
-- How I felt after visiting.
-- The one photo that reminds me of it.
+- why a Place was saved
+- how it felt
+- what should be remembered
 
-Everything else already belongs to Apple Maps.
+Those memories belong to the user.
+
+---
+
+## Ask Only What the World Cannot Answer
+
+Whenever the world already knows the answer, PlacePick should not ask again.
+
+Apple Maps already knows:
+
+- names
+- addresses
+- coordinates
+- business information
+
+PlacePick asks only what Apple Maps never can.
+
+> Why did this Place matter to you?
+
+---
 
 ## Emotion Matters More Than Rating
+
+Ratings compare Places.
+
+Emotions remember experiences.
 
 We never ask:
 
@@ -74,56 +99,64 @@ We never ask:
 
 We ask:
 
-> "How did this place make me feel?"
+> "How did this Place make you feel?"
 
-States:
+Emotion is memory.
 
-- No emoji — No personal experience recorded
-- 😐 — Okay
-- 😊 — Loved it
-- 🤩 — Unforgettable
+Not evaluation.
 
-Emotion is a memory, not a score.
+---
 
-## Simplicity Wins
+## The Map Is the Product
 
-80% of the value comes from 20% of the functionality.
+The Personal Map is the heart of PlacePick.
 
-Before adding a feature, ask:
+Everything begins there.
 
-> Does this help users rediscover places they already chose?
+Everything returns there.
 
-## Every Interaction Returns To The Map
+The map is not one feature among many.
 
-Every interaction should either:
+It is the product itself.
 
-- Change the map
-- Open a place
+---
 
-Then naturally return to the map.
+## Simplicity Is a Feature
 
-## What We Don't Build
+Every feature carries a cost.
 
-- Navigation
-- Public search
-- Addresses
-- Business hours
-- Reviews
-- Business photos
-- Social media photos
-- Route planning
-- Travel itineraries
-- Social feeds
-- AI trip planning
-- Multiple pages
-- Bottom tab bars
+Every screen adds complexity.
 
-If another app already solves it well, PlacePick should not repeat it.
+Every new concept asks users to learn something new.
+
+PlacePick grows by becoming deeper, not larger.
+
+When in doubt:
+
+Choose the simpler product.
+
+---
+
+# What We Choose Not To Be
+
+PlacePick is not:
+
+- another navigation app
+- another review platform
+- another travel planner
+- another social network
+- another AI itinerary generator
+
+If another product already solves a problem well, PlacePick should not solve it again.
+
+Our responsibility is intentionally small.
+
+That is our strength.
 
 ---
 
 # Our Mission
 
-Google Maps remembers where places are.
+Apple Maps helps people find Places.
 
-**PlacePick remembers why they mattered.**
+**PlacePick helps people remember why they mattered.**
