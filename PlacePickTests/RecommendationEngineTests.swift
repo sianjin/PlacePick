@@ -11,75 +11,78 @@ struct RecommendationEngineTests {
         isFavorite: Bool = false,
         emotion: PlaceEmotion? = nil,
         createdAt: Date
-    ) -> Place {
-        Place(
+    ) -> (place: Place, visit: Visit?) {
+        let place = Place(
             appleMapIdentifier: "test-id",
             name: "Test Place",
             latitude: 0,
             longitude: 0,
             collection: testCollection,
             isFavorite: isFavorite,
-            emotion: emotion,
             createdAt: createdAt
         )
+        // Matches the single-Visit compatibility shim: nil visit means no Emotion
+        // was ever recorded, same meaning as the old `Place.emotion == nil`.
+        let visit: Visit? = emotion.map { Visit(place: place, emotion: $0) }
+        return (place, visit)
     }
 
     @Test func favoriteWithNoEmotionScoresHighest() {
-        let place = makePlace(isFavorite: true, emotion: nil, createdAt: now.addingTimeInterval(-100 * 86400))
-        let other = makePlace(isFavorite: false, emotion: .happy, createdAt: now.addingTimeInterval(-100 * 86400))
+        let (place, visit) = makePlace(isFavorite: true, emotion: nil, createdAt: now.addingTimeInterval(-100 * 86400))
+        let (other, otherVisit) = makePlace(isFavorite: false, emotion: .happy, createdAt: now.addingTimeInterval(-100 * 86400))
 
-        #expect(engine.importance(for: place, now: now).value > engine.importance(for: other, now: now).value)
+        #expect(engine.importance(for: place, activeVisit: visit, now: now).value > engine.importance(for: other, activeVisit: otherVisit, now: now).value)
     }
 
     @Test func noEmotionScoresHigherThanRecordedEmotion() {
-        let unresolved = makePlace(emotion: nil, createdAt: now.addingTimeInterval(-100 * 86400))
-        let resolved = makePlace(emotion: .neutral, createdAt: now.addingTimeInterval(-100 * 86400))
+        let (unresolved, unresolvedVisit) = makePlace(emotion: nil, createdAt: now.addingTimeInterval(-100 * 86400))
+        let (resolved, resolvedVisit) = makePlace(emotion: .neutral, createdAt: now.addingTimeInterval(-100 * 86400))
 
-        #expect(engine.importance(for: unresolved, now: now).value > engine.importance(for: resolved, now: now).value)
+        #expect(engine.importance(for: unresolved, activeVisit: unresolvedVisit, now: now).value > engine.importance(for: resolved, activeVisit: resolvedVisit, now: now).value)
     }
 
     @Test func nilAndNeutralProduceDifferentScores() {
-        let nilPlace = makePlace(emotion: nil, createdAt: now.addingTimeInterval(-100 * 86400))
-        let neutralPlace = makePlace(emotion: .neutral, createdAt: now.addingTimeInterval(-100 * 86400))
+        let (nilPlace, nilVisit) = makePlace(emotion: nil, createdAt: now.addingTimeInterval(-100 * 86400))
+        let (neutralPlace, neutralVisit) = makePlace(emotion: .neutral, createdAt: now.addingTimeInterval(-100 * 86400))
 
-        #expect(engine.importance(for: nilPlace, now: now).value != engine.importance(for: neutralPlace, now: now).value)
+        #expect(engine.importance(for: nilPlace, activeVisit: nilVisit, now: now).value != engine.importance(for: neutralPlace, activeVisit: neutralVisit, now: now).value)
     }
 
     @Test func recentlySavedReceivesSmallBoost() {
-        let recent = makePlace(emotion: .happy, createdAt: now.addingTimeInterval(-1 * 86400))
-        let old = makePlace(emotion: .happy, createdAt: now.addingTimeInterval(-100 * 86400))
+        let (recent, recentVisit) = makePlace(emotion: .happy, createdAt: now.addingTimeInterval(-1 * 86400))
+        let (old, oldVisit) = makePlace(emotion: .happy, createdAt: now.addingTimeInterval(-100 * 86400))
 
-        #expect(engine.importance(for: recent, now: now).value > engine.importance(for: old, now: now).value)
+        #expect(engine.importance(for: recent, activeVisit: recentVisit, now: now).value > engine.importance(for: old, activeVisit: oldVisit, now: now).value)
     }
 
     @Test func scoreIsDeterministicForSameFacts() {
-        let place = makePlace(isFavorite: true, emotion: nil, createdAt: now.addingTimeInterval(-100 * 86400))
+        let (place, visit) = makePlace(isFavorite: true, emotion: nil, createdAt: now.addingTimeInterval(-100 * 86400))
 
-        let first = engine.importance(for: place, now: now).value
-        let second = engine.importance(for: place, now: now).value
+        let first = engine.importance(for: place, activeVisit: visit, now: now).value
+        let second = engine.importance(for: place, activeVisit: visit, now: now).value
 
         #expect(first == second)
     }
 
     @Test func scoreDoesNotDependOnOtherPlaces() {
-        let place = makePlace(isFavorite: true, emotion: nil, createdAt: now.addingTimeInterval(-100 * 86400))
+        let (place, visit) = makePlace(isFavorite: true, emotion: nil, createdAt: now.addingTimeInterval(-100 * 86400))
 
-        let scoreAlone = engine.importance(for: place, now: now).value
+        let scoreAlone = engine.importance(for: place, activeVisit: visit, now: now).value
 
         // Simulate other places existing by constructing them; the engine must never
         // take them as input, so the score for `place` must be unaffected.
         _ = (0..<50).map { _ in makePlace(isFavorite: true, emotion: nil, createdAt: now) }
 
-        let scoreWithOthersPresent = engine.importance(for: place, now: now).value
+        let scoreWithOthersPresent = engine.importance(for: place, activeVisit: visit, now: now).value
 
         #expect(scoreAlone == scoreWithOthersPresent)
     }
 
     @Test func scoreStaysWithinNormalizedRange() {
-        let mostImportant = makePlace(isFavorite: true, emotion: nil, createdAt: now)
-        let leastImportant = makePlace(isFavorite: false, emotion: .amazed, createdAt: now.addingTimeInterval(-100 * 86400))
+        let (mostImportant, mostImportantVisit) = makePlace(isFavorite: true, emotion: nil, createdAt: now)
+        let (leastImportant, leastImportantVisit) = makePlace(isFavorite: false, emotion: .amazed, createdAt: now.addingTimeInterval(-100 * 86400))
 
-        #expect(engine.importance(for: mostImportant, now: now).value <= 1.0)
-        #expect(engine.importance(for: leastImportant, now: now).value >= 0.0)
+        #expect(engine.importance(for: mostImportant, activeVisit: mostImportantVisit, now: now).value <= 1.0)
+        #expect(engine.importance(for: leastImportant, activeVisit: leastImportantVisit, now: now).value >= 0.0)
     }
 }

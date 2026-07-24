@@ -103,7 +103,10 @@ struct AddPlaceScreen: View {
 
     private func save(mapItem: MKMapItem, relationship: PlaceRelationshipDraft) {
         let repository = PlaceRepository(modelContext: modelContext)
-        let creationService = PlaceCreationService(repository: repository)
+        let creationService = PlaceCreationService(
+            repository: repository,
+            visitRepository: VisitRepository(modelContext: modelContext)
+        )
 
         do {
             let result = try creationService.createPlace(from: mapItem, relationship: relationship)

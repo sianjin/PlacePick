@@ -6,6 +6,7 @@ struct MapScreen: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var places: [Place]
     @Query(sort: \PlaceCollection.order) private var collections: [PlaceCollection]
+    @Query private var visits: [Visit]
 
     @StateObject private var locationAuthorization = LocationAuthorizationService()
     @EnvironmentObject private var pendingImportCoordinator: PendingImportCoordinator
@@ -14,6 +15,8 @@ struct MapScreen: View {
     @State private var selectedCollection: PlaceCollection?
     @State private var selectedPlace: Place?
     @State private var isPresentingAddPlace = false
+    @State private var isPresentingPhotoMemory = false
+    @State private var isPresentingCaptureChoice = false
     @State private var isPresentingManageCollections = false
     @State private var addPlaceInitialQuery = ""
     @State private var receivedPlaceIdentity: SharedPlaceIdentity?
@@ -29,17 +32,30 @@ struct MapScreen: View {
         return active.filter { $0.collection.id == selectedCollection.id }
     }
 
+    /// One lookup per body evaluation rather than a fetch per marker. Compatibility shim:
+    /// at most one active Visit per Place — see VisitRepository.
+    private var activeVisitsByPlaceID: [UUID: Visit] {
+        Dictionary(
+            visits.filter { $0.deletedAt == nil }.map { ($0.place.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
             Map(position: $cameraPosition, selection: $selectedPlace) {
+                let visitsByPlaceID = activeVisitsByPlaceID
                 ForEach(visiblePlaces) { place in
-                    let importance = recommendationEngine.importance(for: place, now: .now)
+                    let importance = recommendationEngine.importance(
+                        for: place,
+                        activeVisit: visitsByPlaceID[place.id],
+                        now: .now
+                    )
                     Annotation(
                         MapLabelPresentation.shouldShowLabel(importance: importance, span: currentSpan) ? place.name : "",
                         coordinate: place.coordinate
                     ) {
                         PlaceMapMarker(place: place, importance: importance)
-                            .onTapGesture { selectedPlace = place }
                     }
                     .tag(place)
                 }
@@ -65,7 +81,7 @@ struct MapScreen: View {
         }
         .overlay(alignment: .bottomTrailing) {
             Button {
-                isPresentingAddPlace = true
+                isPresentingCaptureChoice = true
             } label: {
                 Image(systemName: "plus")
                     .font(.title2.weight(.semibold))
@@ -76,8 +92,20 @@ struct MapScreen: View {
             }
             .padding()
         }
+        .confirmationDialog(
+            "What would you like to save?",
+            isPresented: $isPresentingCaptureChoice,
+            titleVisibility: .visible
+        ) {
+            Button("A Place") { isPresentingAddPlace = true }
+            Button("A Memory") { isPresentingPhotoMemory = true }
+            Button("Cancel", role: .cancel) {}
+        }
         .sheet(isPresented: $isPresentingAddPlace) {
             AddPlaceScreen(initialQuery: addPlaceInitialQuery)
+        }
+        .sheet(isPresented: $isPresentingPhotoMemory) {
+            PhotoMemoryScreen()
         }
         .sheet(item: $selectedPlace) { place in
             PlaceDetailSheet(place: place)
@@ -216,6 +244,6 @@ extension Place {
 
 #Preview {
     MapScreen()
-        .modelContainer(for: [Place.self, PlaceCollection.self], inMemory: true)
+        .modelContainer(for: [Place.self, PlaceCollection.self, Visit.self, VisitPhoto.self], inMemory: true)
         .environmentObject(PendingImportCoordinator())
 }

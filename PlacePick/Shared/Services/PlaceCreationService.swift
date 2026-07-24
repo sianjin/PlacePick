@@ -6,7 +6,6 @@ struct PlaceRelationshipDraft {
     var isFavorite: Bool = false
     var emotion: PlaceEmotion? = nil
     var note: String = ""
-    var memoryPhotoID: String? = nil
 }
 
 enum PlaceCreationResult {
@@ -26,9 +25,14 @@ enum PlaceCreationError: Error {
 @MainActor
 final class PlaceCreationService {
     private let repository: PlaceRepository
+    private let visitRepository: VisitRepository?
 
-    init(repository: PlaceRepository) {
+    /// visitRepository is optional only so existing call sites that never touch Emotion/Note
+    /// (e.g. received-Place import) don't need one. Any path that saves an initial Emotion
+    /// or Note must supply it.
+    init(repository: PlaceRepository, visitRepository: VisitRepository? = nil) {
         self.repository = repository
+        self.visitRepository = visitRepository
     }
 
     func createPlace(
@@ -47,12 +51,17 @@ final class PlaceCreationService {
             latitude: mapItem.placemark.coordinate.latitude,
             longitude: mapItem.placemark.coordinate.longitude,
             collection: relationship.collection,
-            isFavorite: relationship.isFavorite,
-            emotion: relationship.emotion,
-            note: relationship.note,
-            memoryPhotoID: relationship.memoryPhotoID
+            isFavorite: relationship.isFavorite
         )
         repository.insert(place)
+
+        if relationship.emotion != nil || !relationship.note.isEmpty {
+            let visit = visitRepository?.findOrCreateActiveVisit(for: place)
+            visit?.emotion = relationship.emotion
+            visit?.note = relationship.note
+            visitRepository?.save()
+        }
+
         return .created(place)
     }
 

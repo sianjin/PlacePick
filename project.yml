@@ -22,6 +22,7 @@ targets:
         ENABLE_PREVIEWS: true
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "PlacePick uses your location to show where you are relative to the places you saved."
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "PlacePick reads photo dates and locations to help group your photos into Memories."
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_ENTITLEMENTS: PlacePick/PlacePick.entitlements
     info:
@@ -29,6 +30,7 @@ targets:
       properties:
         UILaunchScreen: {}
         NSLocationWhenInUseUsageDescription: "PlacePick uses your location to show where you are relative to the places you saved."
+        NSPhotoLibraryUsageDescription: "PlacePick reads photo dates and locations to help group your photos into Memories."
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - placepick

@@ -1,20 +1,8 @@
 import Foundation
 import SwiftData
 
-enum PlaceEmotion: String, Codable {
-    case neutral
-    case happy
-    case amazed
-
-    var symbolEmoji: String {
-        switch self {
-        case .neutral: return "😐"
-        case .happy: return "😊"
-        case .amazed: return "🤩"
-        }
-    }
-}
-
+/// Long-term relationship data only. Emotion and Note moved to Visit — see DATA_MODEL.md
+/// §5: "The same Place may have different Emotions across different Visits."
 @Model
 final class Place {
     @Attribute(.unique) var id: UUID
@@ -26,9 +14,6 @@ final class Place {
 
     var collection: PlaceCollection
     var isFavorite: Bool
-    var emotion: PlaceEmotion?
-    var note: String
-    var memoryPhotoID: String?
 
     var createdAt: Date
     var modifiedAt: Date
@@ -42,9 +27,6 @@ final class Place {
         longitude: Double,
         collection: PlaceCollection,
         isFavorite: Bool = false,
-        emotion: PlaceEmotion? = nil,
-        note: String = "",
-        memoryPhotoID: String? = nil,
         createdAt: Date = .now,
         modifiedAt: Date = .now,
         deletedAt: Date? = nil
@@ -56,9 +38,6 @@ final class Place {
         self.longitude = longitude
         self.collection = collection
         self.isFavorite = isFavorite
-        self.emotion = emotion
-        self.note = note
-        self.memoryPhotoID = memoryPhotoID
         self.createdAt = createdAt
         self.modifiedAt = modifiedAt
         self.deletedAt = deletedAt

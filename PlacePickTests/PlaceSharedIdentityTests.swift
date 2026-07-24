@@ -21,8 +21,7 @@ struct PlaceSharedIdentityTests {
             latitude: 37.55,
             longitude: -122.01,
             collection: collection,
-            isFavorite: true,
-            note: "So good"
+            isFavorite: true
         )
 
         let identity = place.sharedIdentity

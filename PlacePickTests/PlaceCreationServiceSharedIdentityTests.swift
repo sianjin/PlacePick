@@ -27,8 +27,6 @@ struct PlaceCreationServiceSharedIdentityTests {
         #expect(place.name == "Ichiran")
         #expect(place.appleMapIdentifier == "apple-1")
         #expect(place.isFavorite == false)
-        #expect(place.emotion == nil)
-        #expect(place.note.isEmpty)
     }
 
     @Test func returnsExistingWhenAppleMapIdentifierMatches() throws {

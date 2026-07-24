@@ -33,8 +33,7 @@ struct CollectionSnapshotBuilderTests {
             latitude: 35.6595,
             longitude: 139.7005,
             collection: collection,
-            isFavorite: true,
-            note: "Best ramen"
+            isFavorite: true
         )
         context.insert(place)
 
