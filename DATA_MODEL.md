@@ -1,1121 +1,1242 @@
-# PlacePick — DATA_MODEL.md
+# PlacePick Data Model
 
-Version: 5.0
-Status: Domain and Persistence Specification
+## 1. Purpose
 
----
+This document defines the persistent data model for PlacePick.
 
-# Purpose
+PlacePick is a personal memory system organized through places. The same stored data must support two primary browsing modes:
 
-This document defines the domain model used by the PlacePick data layer.
+- **Map** — browse memories spatially
+- **Calendar / Timeline** — browse memories temporally
 
-It describes the persistent objects, their relationships, and the invariants that every implementation must preserve.
-
-This document intentionally focuses on product concepts rather than database schemas or implementation details.
-
-It answers:
-
-- What objects exist?
-- What does each object represent?
-- Which data is authoritative?
-- Which data is editable?
-- Which data is derived?
-- Which relationships must always remain true?
+This document defines entity ownership, relationship boundaries, photo-based visit creation, place resolution, derived views, deletion rules, and synchronization invariants.
 
 ---
 
-# Relationship to Other Documents
-
-This document should be read together with:
-
-- MVP.md
-- COLLECTIONS.md
-- RECOMMENDATION_MODEL.md
-- PLACE_CREATION.md
-
-Responsibilities are divided as follows.
-
-MVP.md defines:
-
-- Product philosophy
-- User experience
-- Core concepts
-
-COLLECTIONS.md defines:
-
-- Collection philosophy
-- Collection ownership
-- Collection import
-- Collection merge behavior
-
-RECOMMENDATION_MODEL.md defines:
-
-- Importance calculation
-
-This document defines:
-
-- Domain objects
-- Data ownership
-- Relationships between objects
-- Persistence invariants
-- Engineering invariants
-
-It intentionally does not redefine Collection philosophy already established elsewhere.
-
----
-
-# Modeling Principles
-
-The PlacePick data model represents relationships rather than simply records.
-
-Every stored object exists because it models part of the user's relationship with meaningful Places.
-
-Whenever possible, product meaning should be represented directly rather than inferred from implementation details.
-
-The model should remain:
-
-- predictable
-- portable
-- deterministic
-- implementation-independent
-
----
-
-# Domain Overview
-
-The PlacePick domain consists of four primary concepts.
+# 2. Core Model
 
 ```text
 Collection
-
-        │
-        │ 1
-        │
-        │
-        │ *
-      Place
-        │
-        ├───────────────┐
-        │               │
-        ▼               ▼
-
-Place Identity    Personal Relationship
-
-        │
-        ▼
-
-Recommendation
-(derived)
+    │
+    └── Place
+            │
+            └── Visit
+                    │
+                    └── VisitPhoto
 ```
 
-Collections organize Places.
+The user-facing term is **Memory**.
 
-Places represent real-world locations.
+The persistence-layer term is **Visit**.
 
-Every Place contains two conceptually separate layers:
+```text
+User-facing language: Memory
+Data-model language: Visit
+```
 
-- Identity
-- Personal Relationship
-
-Recommendation is computed from those layers.
-
-It is never authoritative.
+A Memory is emotional and personal. A Visit is the objective record representing one experience at one Place during one time period.
 
 ---
 
-# Core Object Model
+# 3. Core Definitions
 
-The central object in PlacePick is Place.
+## 3.1 Place
 
-Conceptually:
+A `Place` represents one canonical real-world location.
+
+Its identity comes from Apple Maps and remains stable across multiple Visits.
+
+A Place answers:
+
+> Where did this happen?
+
+---
+
+## 3.2 Visit
+
+A `Visit` represents one experience at one Place during one continuous time period.
+
+A Visit may contain:
+
+- one or more Photos
+- one Emotion
+- one Note
+
+A Visit answers:
+
+> What happened here this time?
+
+A Place may have many Visits:
 
 ```text
 Place
-
-├── Identity
-
-├── Personal Relationship
-
-└── Persistence Metadata
+├── Visit — July 18, 2026
+├── Visit — December 24, 2027
+└── Visit — May 3, 2028
 ```
 
-These three layers answer different questions.
-
-Identity answers:
-
-> What real-world Place is this?
-
-Relationship answers:
-
-> What does this Place mean to me?
-
-Persistence Metadata answers:
-
-> How is this Place stored and synchronized?
-
-These layers should never be conflated.
+Each Visit is displayed to the user as a Memory.
 
 ---
 
-# Place Identity
+## 3.3 VisitPhoto
 
-Place Identity represents the real-world Place.
+A `VisitPhoto` represents one Photo attached to one Visit.
 
-For the MVP it is resolved through Apple Maps.
+It is an independent entity because each Photo may need its own:
 
-Conceptually it contains:
-
-- Apple Maps identifier
-- Place name
-- Latitude
-- Longitude
-- Necessary MapKit-derived identity metadata
-
-Identity is authoritative.
-
-Users do not freely edit Place Identity.
-
-If an incorrect Apple Maps result was selected, Place Identity is corrected through the Replace Place flow.
-
-Changing Identity must preserve Personal Relationship whenever possible.
-
-Identity is portable.
-
-Identity may be shared between users.
-
-Identity may participate in duplicate detection.
-
-Identity is never derived from Recommendation.
+- capture time
+- ordering
+- Photos-library identifier
+- durable stored-image reference
+- optional location metadata
+- deletion state
+- synchronization state
 
 ---
 
-# Personal Relationship
+## 3.4 Collection
 
-Personal Relationship represents everything the user records about a Place.
-
-Conceptually it contains:
-
-- Collection membership
-- Favorite
-- Emotion
-- Note
-- Memory Photo
-
-Relationship belongs entirely to the user.
-
-Relationship is editable.
-
-Relationship is independent from Apple Maps.
-
-Changing Relationship must never modify Place Identity.
-
-Relationship is intentionally local.
-
-Unless explicitly stated elsewhere, Relationship does not transfer between users.
-
-Collection membership belongs to the Relationship layer rather than the Identity layer.
-
----
-
-# Persistence Metadata
-
-Persistence Metadata exists only to support storage and synchronization.
-
-Examples include:
-
-- Stable local identifier
-- Creation timestamp
-- Modification timestamp
-- Deletion timestamp
-
-Persistence Metadata is not part of product meaning.
-
-Users never edit it directly.
-
-Recommendation never depends on local identifiers.
-
-Persistence Metadata should never appear in the user interface.
-
-Its purpose is solely to support reliable persistence.
-
----
-
-# Collection
-
-Collection is a separate domain object.
-
-Collection ownership and behavior are defined in COLLECTIONS.md.
-
-This document defines only how Collections relate to Places.
-
-Conceptually:
-
-```text
-Collection
-
-├── Identity
-
-└── Metadata
-```
-
-Collection Identity exists only to provide stable references.
-
-Collection Metadata includes:
-
-- Name
-- Icon
-- Order
-
-Collection Metadata belongs entirely to the owner.
-
-Merge behavior for Collection Metadata is defined in COLLECTIONS.md.
-
-A Place stores only a reference to a Collection.
-
-Conceptually:
-
-```text
-collectionID
-```
-
-rather than duplicating Collection information.
-
-This guarantees a single authoritative Collection definition.
-
----
-
-# Place–Collection Relationship
-
-The relationship between Places and Collections is:
-
-```text
-Collection
-
-1
-
-↓
-
-*
-
-Place
-```
-
-Every Place belongs to exactly one Collection.
-
-Every Collection may contain zero or more Places.
-
-Multiple Collection membership is intentionally unsupported.
-
-This invariant simplifies:
-
-- browsing
-- filtering
-- synchronization
-- import
-- merge
-- recommendation
-
-Changing Collection changes only the user's organization.
-
-It does not change:
-
-- Place Identity
-- Recommendation logic
-- Apple Maps information
-
----
-
-# Emotion Model
-
-Emotion is intentionally modeled as an optional value.
-
-Conceptually:
-
-```swift
-enum PlaceEmotion {
-
-    case neutral
-
-    case happy
-
-    case amazed
-
-}
-
-var emotion: PlaceEmotion?
-```
-
-The four semantic states are:
-
-| Stored Value | Meaning | UI |
-|--------------|---------|----|
-| `nil` | No personal experience recorded | No emoji |
-| `.neutral` | "It was okay." | 😐 |
-| `.happy` | "Loved it." | 😊 |
-| `.amazed` | "Unforgettable." | 🤩 |
-
-`nil` is not the same as `.neutral`.
-
-No separate visited flag exists.
-
-A Place may:
-
-- not yet have been visited
-- have been visited without recording Emotion
-
-Those situations intentionally share the same state.
-
-The data model preserves that ambiguity.
-
----
-
-# Editable vs Authoritative Data
-
-The data model intentionally separates user-editable information from authoritative identity.
-
-Directly editable:
-
-- Collection
-- Favorite
-- Emotion
-- Note
-- Memory Photo
-
-Authoritative:
-
-- Apple Maps identifier
-- Place name
-- Coordinates
-- Place Identity
-
-Changing authoritative data always requires Replace Place.
-
-Changing editable data never changes Place Identity.
-
----
-
-# Part 1 Summary
-
-The PlacePick domain model is built on three ideas.
-
-1.
-
-Every Place has an Identity.
-
-2.
-
-Every Place has a Personal Relationship.
-
-3.
-
-Persistence exists to support those concepts rather than define them.
-
-Everything else in the data model—including sharing, import, merge, recommendation, and synchronization—builds on these three foundations.
-
----
-
-# Ownership Representation
-
-Ownership is a product concept defined in COLLECTIONS.md.
-
-This document defines only how ownership is represented in the data model.
-
-In the MVP:
-
-Local storage implicitly represents ownership.
-
-Every Collection stored in the local database is owned by the current user.
-
-Every Personal Relationship belongs to the current user.
-
-Ownership is therefore determined by storage location rather than an explicit owner identifier.
-
-This keeps the MVP simple while remaining compatible with future multi-user features.
-
----
-
-# Local Identity vs Shared Identity
-
-PlacePick distinguishes between local objects and portable objects.
-
-Local objects exist only inside one user's Personal Map.
-
-Portable objects exist only during sharing.
-
-They intentionally use different representations.
-
-```text
-Local Database
-
-Collection
-Place
-Relationship
-
-↓
-
-Share
-
-Collection Snapshot
-Shared Place Identity
-```
-
-Local records are authoritative.
-
-Shared objects are temporary.
-
-Imported data always becomes new local records.
-
----
-
-# Portable vs Local Data
-
-Not every piece of information may leave the local database.
-
-The following table defines portability.
-
-| Data | Portable | Notes |
-|--------|-----------|------|
-| Place Identity | ✅ | Shared between users |
-| Collection Snapshot | ✅ | Shared once |
-| Collection Name | ✅ | Initial suggestion only |
-| Collection Icon | ✅ | Initial suggestion only |
-| Collection Membership | ⚠️ | Receiver chooses destination |
-| Favorite | ❌ | Local only |
-| Emotion | ❌ | Local only |
-| Note | ❌ | Local only |
-| Memory Photo | ❌ | Local only |
-| Local IDs | ❌ | Never shared |
-| Persistence Metadata | ❌ | Never shared |
-
-The product intentionally shares Places rather than personal memories.
-
----
-
-# Shared Place Identity
-
-When a Place is shared, only its Identity is transferred.
-
-Conceptually:
-
-```swift
-struct SharedPlaceIdentity {
-
-    let appleMapsIdentifier: String?
-
-    let name: String
-
-    let latitude: Double
-
-    let longitude: Double
-
-}
-```
-
-This object contains only enough information to identify the Place.
-
-It intentionally excludes:
-
-- Collection
-- Favorite
-- Emotion
-- Note
-- Memory Photo
-
-A shared Place never contains another person's memories.
-
----
-
-# Shared Collection Snapshot
-
-Sharing a Collection creates a snapshot.
-
-Conceptually:
-
-```swift
-struct SharedCollectionSnapshot {
-
-    let snapshotID: UUID
-
-    let suggestedName: String
-
-    let suggestedIcon: String
-
-    let places: [SharedPlaceIdentity]
-
-}
-```
-
-A Collection Snapshot represents:
-
-> "These Places were grouped together by the sender."
-
-It does not transfer:
-
-- ownership
-- permissions
-- collaboration
-- synchronization
-
-After import, the snapshot no longer exists.
-
-Only local Collections remain.
-
----
-
-# Import Semantics
-
-A Collection Snapshot may be imported in two ways.
-
-```text
-Import as New Collection
-
-or
-
-Merge into Existing Collection
-```
-
-The receiver always decides.
-
-Import never changes existing data automatically.
-
----
-
-# Import as New Collection
-
-Import as New Collection creates:
-
-- a new Collection
-- new local identifiers
-- new ownership
-
-The imported Collection initially uses:
-
-- shared name
-- shared icon
-
-for convenience.
-
-Immediately after import:
-
-the receiver owns the Collection completely.
-
-Future changes made by the sender never affect it.
-
----
-
-# Merge into Existing Collection
-
-Instead of creating a new Collection, the receiver may merge into an existing Collection.
-
-Only newly imported Places become members of that Collection.
-
-Existing Places remain unchanged.
-
-Collection metadata remains unchanged.
-
-The receiver's organization is always authoritative.
-
----
-
-# Existing Place Behavior
-
-If an imported Place already exists locally:
-
-The existing Place always wins.
-
-The implementation preserves:
-
-- Collection
-- Favorite
-- Emotion
-- Note
-- Memory Photo
-
-The implementation never:
-
-- duplicates the Place
-- moves it automatically
-- overwrites personal memories
-
-Sharing expands a Personal Map.
-
-It never rewrites one.
-
----
-
-# Existing Collection Behavior
-
-If the destination Collection already exists:
-
-The Collection remains authoritative.
-
-The following never change automatically:
-
-- Name
-- Icon
-- Order
-
-Only new Place membership may be added.
-
-Collection metadata is never merged.
-
----
-
-# Duplicate Resolution
-
-Duplicate detection is based primarily on Place Identity.
-
-The preferred order is:
-
-1. Apple Maps identifier
-2. Equivalent identity provided by MapKit
-3. Fallback matching rules
-
-Duplicate detection never considers:
-
-- Collection
-- Favorite
-- Emotion
-- Note
-- Memory Photo
-
-Duplicate detection answers only:
-
-> "Is this the same real-world Place?"
-
-It never answers:
-
-> "Are these the same memories?"
-
----
-
-# Replace Place
-
-Occasionally a user selects the wrong Apple Maps result.
-
-Replace Place corrects Place Identity while preserving Personal Relationship.
-
-Conceptually:
-
-```text
-Old Identity
-
-↓
-
-Replace
-
-↓
-
-New Identity
-
-↓
-
-Relationship preserved
-```
-
-The following remain unchanged whenever possible:
-
-- Collection
-- Favorite
-- Emotion
-- Note
-- Memory Photo
-
-Replace Place updates the real-world reference.
-
-It does not change what the Place means to the user.
-
----
-
-# Relationship Preservation
-
-The following rule applies throughout the product.
-
-Whenever Place Identity changes:
-
-Relationship should be preserved whenever possible.
-
-Whenever Relationship changes:
-
-Identity must never change.
-
-This invariant is fundamental.
-
----
-
-# Part 2 Summary
-
-The PlacePick data model separates portable information from personal information.
-
-Portable data exists to identify Places.
-
-Personal data exists to describe the user's relationship with those Places.
-
-Import creates new local ownership.
-
-Merge preserves existing organization.
-
-No sharing operation ever transfers personal memories or rewrites the receiver's Personal Map.
-
-
----
-
-# Persistence Metadata
-
-Persistence Metadata supports reliable storage and synchronization.
-
-It is not part of the product domain.
-
-Conceptually:
-
-```swift
-struct PersistenceMetadata {
-
-    let id: UUID
-
-    let createdAt: Date
-
-    var modifiedAt: Date
-
-    var deletedAt: Date?
-
-}
-```
-
-These fields exist only to support:
-
-- local persistence
-- synchronization
-- conflict resolution
-- migration
-
-They are never shown directly to users.
-
----
-
-# Stable Local Identifiers
-
-Every persistent object must have a stable local identifier.
-
-Examples include:
-
-- Place
-- Collection
-
-Local identifiers:
-
-- never change
-- survive application restarts
-- survive synchronization
-- are never reused
-
-Local identifiers are implementation details.
-
-They are intentionally different from Apple Maps identifiers.
-
----
-
-# Creation and Modification
-
-Every persistent object records:
-
-- creation time
-- most recent modification time
-
-Creation time never changes.
-
-Modification time updates whenever user-editable data changes.
-
-Examples include:
-
-- changing Collection
-- editing Note
-- changing Emotion
-- toggling Favorite
-- replacing Memory Photo
-
-Updating synchronization metadata alone should not change the product meaning of a Place.
-
----
-
-# Deletion Model
-
-Deletion is represented using tombstones.
-
-Conceptually:
-
-```text
-deletedAt == nil
-
-↓
-
-Active
-```
-
-```text
-deletedAt != nil
-
-↓
-
-Deleted
-```
-
-Deleted records remain available internally until synchronization is complete.
-
-This prevents deleted Places from being recreated during future merges or sync operations.
-
-Deletion is therefore a synchronization concern rather than a user-visible concept.
-
----
-
-# Synchronization Model
-
-PlacePick follows a local-first architecture.
-
-The local database is always immediately editable.
-
-Cloud synchronization propagates changes asynchronously.
-
-When iCloud is unavailable:
-
-- all features continue to work
-- data remains fully editable
-- synchronization resumes automatically when available
-
-The product should never require users to think about synchronization.
-
-Synchronization supports the product.
-
-It does not define the product.
-
----
-
-# Conflict Resolution
-
-Conflicts occur when the same object is modified independently before synchronization.
-
-For the MVP:
-
-Most editable fields use:
-
-> Last Write Wins
-
-based on:
-
-```text
-modifiedAt
-```
-
-This rule applies independently to each record.
-
-Conflict resolution should remain deterministic.
-
-Future versions may introduce field-level merge strategies where appropriate.
-
----
-
-# Derived Data
-
-Some values are computed rather than stored.
-
-These values are derived.
-
-Examples include:
-
-- Importance Score
-- Annotation size
-- Visual prominence
-- Recommendation ordering
-
-Derived data is never authoritative.
-
-If necessary, it can always be recomputed from authoritative data.
-
-Authoritative examples include:
-
-- Place Identity
-- Collection
-- Favorite
-- Emotion
-- Note
-- Memory Photo
-
-Recommendation should never become the source of truth.
-
----
-
-# Data Authority
-
-Every piece of data should have exactly one authoritative source.
+A `Collection` organizes Places by user-defined meaning.
 
 Examples:
 
-| Data | Authority |
-|------|-----------|
-| Place Identity | Apple Maps |
-| Collection Metadata | User |
-| Personal Relationship | User |
-| Persistence Metadata | Local database |
-| Recommendation | Derived computation |
+- Coffee
+- Weekend Trips
+- Japan
+- Date Ideas
 
-This principle prevents conflicting ownership and ambiguous updates.
+Collections organize Places. Calendar and Timeline organize Visits by time. These are orthogonal organization systems.
 
 ---
 
-# Engineering Invariants
+# 4. Product-Level Ownership
 
-The following rules are mandatory for every implementation.
+The central ownership distinction is:
 
-## Identity
+```text
+Place = long-term relationship
+Visit = one specific experience
+```
 
-Identity and Personal Relationship are independent.
-
-Changing one must not silently change the other.
-
----
-
-## Relationship
-
-Every Place belongs to exactly one Collection.
-
-Relationship data belongs entirely to the user.
-
-Relationship never participates in duplicate detection.
-
----
-
-## Recommendation
-
-Recommendation is derived.
-
-Recommendation must never become persistent user data.
-
-Deleting Recommendation must never lose user information.
+| Data | Owner |
+|---|---|
+| Apple Maps identity | Place |
+| Place name | Place |
+| Coordinates | Place |
+| Category | Place |
+| Collections | Place |
+| Favorite | Place |
+| Experience time | Visit, derived from Photos |
+| Emotion | Visit |
+| Visit Note | Visit |
+| Photos | Visit |
+| Photo capture time | VisitPhoto |
+| Calendar grouping | Derived |
+| Timeline ordering | Derived |
+| Daily Travel Log | Derived |
+| Shareable Day Overview | Derived |
 
 ---
 
-## Import
+# 5. Favorite and Emotion
 
-Import creates new local ownership.
+## 5.1 Favorite
 
-Import never overwrites:
+Favorite belongs to Place.
 
-- Note
-- Emotion
-- Favorite
-- Memory Photo
+It means:
 
-Import never changes existing Collection organization automatically.
+> This is a Place I continue to value or want to keep prominent.
 
----
+Favorite expresses a long-term relationship. A disappointing Visit does not necessarily make the Place unimportant.
 
-## Synchronization
-
-Synchronization must preserve:
-
-- stable identifiers
-- timestamps
-- semantic meaning
-
-Synchronization must never silently change product behavior.
+```text
+Place.isFavorite
+```
 
 ---
 
-## Optional Values
+## 5.2 Emotion
 
-Optional values carry semantic meaning.
+Emotion belongs to Visit.
+
+It means:
+
+> This is how that particular experience felt.
+
+The same Place may have different Emotions across different Visits:
+
+```text
+Summer 2026     unforgettable
+Winter 2027     neutral
+Spring 2028     loved
+```
+
+```text
+Visit.emotion
+```
+
+Emotion must never be treated as a permanent rating of the Place.
+
+---
+
+# 6. Place Entity
+
+## 6.1 Proposed Fields
+
+```text
+Place
+├── id
+├── appleMapsIdentifier
+├── name
+├── latitude
+├── longitude
+├── category
+├── isFavorite
+├── createdAt
+├── modifiedAt
+├── deletedAt
+├── collections
+└── visits
+```
+
+## 6.2 Field Definitions
+
+### `id`
+
+```swift
+id: UUID
+```
+
+Stable internal identifier used for persistence, synchronization, relationships, and tombstones.
+
+### `appleMapsIdentifier`
+
+```swift
+appleMapsIdentifier: String
+```
+
+Canonical Apple Maps identity. It is the primary external identity signal for duplicate prevention and Place replacement.
+
+It is not freely editable.
+
+### `name`
+
+```swift
+name: String
+```
+
+Canonical display name derived from the selected Apple Maps result.
+
+It is not freely editable.
+
+### `latitude`
+
+```swift
+latitude: Double
+```
+
+Canonical latitude derived from Apple Maps.
+
+It is not freely editable.
+
+### `longitude`
+
+```swift
+longitude: Double
+```
+
+Canonical longitude derived from Apple Maps.
+
+It is not freely editable.
+
+### `category`
+
+```swift
+category: PlaceCategory
+```
+
+User-facing high-level category.
+
+Category belongs to Place because it describes how the user understands the location across time.
+
+Category is preserved during Replace Map Reference unless a future documented product rule explicitly changes this behavior.
+
+### `isFavorite`
+
+```swift
+isFavorite: Bool
+```
+
+Indicates whether the user continues to value or prioritize this Place.
+
+Favorite belongs to Place, not Visit.
+
+### Lifecycle fields
+
+```swift
+createdAt: Date
+modifiedAt: Date
+deletedAt: Date?
+```
+
+`deletedAt` is a tombstone timestamp. A non-nil value means the Place is logically deleted.
+
+---
+
+# 7. Visit Entity
+
+## 7.1 Proposed Fields
+
+```text
+Visit
+├── id
+├── placeID
+├── startedAt
+├── endedAt
+├── emotion
+├── note
+├── createdAt
+├── modifiedAt
+├── deletedAt
+└── photos
+```
+
+## 7.2 Field Definitions
+
+### `id`
+
+```swift
+id: UUID
+```
+
+Stable internal identifier.
+
+### `placeID`
+
+```swift
+placeID: UUID
+```
+
+Every Visit belongs to exactly one Place.
+
+A Visit cannot exist without a resolved Place. This is a hard invariant.
+
+### `startedAt`
+
+```swift
+startedAt: Date
+```
+
+The earliest reliable capture time among the Visit's Photos.
+
+Example:
+
+```text
+9:12
+9:18
+9:24
+```
+
+Then:
+
+```text
+startedAt = 9:12
+```
+
+Visit time is derived from Photo metadata. It is not normally entered manually.
+
+### `endedAt`
+
+```swift
+endedAt: Date
+```
+
+The latest reliable capture time among the Visit's Photos.
+
+For the same group:
+
+```text
+endedAt = 9:24
+```
+
+If a Visit contains one Photo:
+
+```text
+startedAt == endedAt
+```
+
+### `emotion`
+
+```swift
+emotion: Emotion?
+```
+
+Allowed values:
+
+```text
+nil
+neutral
+loved
+unforgettable
+```
+
+`nil` means no personal feeling has been recorded for this Visit.
+
+It does not mean unvisited, and it does not describe the Place permanently.
+
+### `note`
+
+```swift
+note: String?
+```
+
+A personal note about this specific Visit.
+
+Examples:
+
+```text
+First time here with my parents.
+```
+
+```text
+The winter view felt completely different.
+```
+
+### Lifecycle fields
+
+```swift
+createdAt: Date
+modifiedAt: Date
+deletedAt: Date?
+```
+
+`createdAt` records when the Visit record was created, not when the experience occurred.
+
+Example:
+
+```text
+Visit happened: July 18, 2024
+Imported into PlacePick: July 23, 2026
+```
+
+---
+
+# 8. VisitPhoto Entity
+
+## 8.1 Proposed Fields
+
+```text
+VisitPhoto
+├── id
+├── visitID
+├── localAssetIdentifier
+├── storedImageReference
+├── capturedAt
+├── latitude
+├── longitude
+├── sortOrder
+├── createdAt
+├── modifiedAt
+└── deletedAt
+```
+
+## 8.2 Field Definitions
+
+### `id`
+
+```swift
+id: UUID
+```
+
+Stable internal identifier.
+
+### `visitID`
+
+```swift
+visitID: UUID
+```
+
+Every VisitPhoto belongs to exactly one Visit.
+
+### `localAssetIdentifier`
+
+```swift
+localAssetIdentifier: String?
+```
+
+Optional Photos-library asset identifier.
+
+It may help reconnect to the original asset on the current device, but it must not be the only durable reference because:
+
+- the original Photo may be deleted
+- another device may not expose the same local identifier
+- synchronization may require PlacePick-managed storage
+
+### `storedImageReference`
+
+```swift
+storedImageReference: String
+```
+
+Durable PlacePick-managed image reference.
+
+The exact storage mechanism belongs in implementation and sync documentation.
+
+### `capturedAt`
+
+```swift
+capturedAt: Date
+```
+
+Reliable capture timestamp from Photo metadata.
+
+PlacePick must not silently substitute import time, current time, or file creation time when reliable capture time is unavailable.
+
+### `latitude` and `longitude`
+
+```swift
+latitude: Double?
+longitude: Double?
+```
+
+Optional Photo-coordinate metadata.
+
+Photo coordinates may:
+
+- suggest candidate Places
+- help cluster Photos
+- narrow nearby Apple Maps searches
+
+They do not establish canonical Place identity.
+
+### `sortOrder`
+
+```swift
+sortOrder: Int
+```
+
+Stable user-visible ordering inside the Visit.
+
+Default ordering follows `capturedAt`.
+
+### Lifecycle fields
+
+```swift
+createdAt: Date
+modifiedAt: Date
+deletedAt: Date?
+```
+
+---
+
+# 9. Photo Requirement
+
+A Visit is photo-anchored.
+
+```text
+No Photo
+    ↓
+No Visit
+```
+
+A Visit must contain at least one Photo with reliable capture-time metadata.
+
+This rule exists because:
+
+- the Photo provides the temporal anchor
+- the user does not need to manually enter time
+- Calendar ordering remains trustworthy
+- multiple Visits to the same Place remain distinguishable
+- Travel Logs can be reconstructed automatically
+
+A Place may still exist without any Visits.
 
 For example:
 
 ```text
-nil
-≠
-.neutral
+Saved for later
+Favorite
+Added to Collection
 ```
 
-Implementations must preserve this distinction exactly.
+But a Visit cannot exist without at least one valid Photo.
 
 ---
 
-## Local Authority
+# 10. Place-Level Content Without a Visit
 
-The local Personal Map is always authoritative.
+Because Visits require Photos, non-visit information must remain separate.
 
-Sharing expands it.
+Place-level fields may include:
 
-Synchronization preserves it.
+- Favorite
+- Category
+- Collections
 
-Neither operation should unexpectedly reorganize or rewrite it.
+The MVP should avoid introducing a general Place Note unless there is a clear product need.
 
----
+A Place Note and Visit Note have different meanings:
 
-# Testing Requirements
+```text
+Place Note
+=
+long-term information about the location
+```
 
-Every implementation should include automated tests covering the following behaviors.
+```text
+Visit Note
+=
+personal meaning attached to one specific experience
+```
 
-## Identity
-
-- Identity survives Relationship edits.
-- Replace Place preserves Relationship.
-- Duplicate detection correctly identifies identical Places.
-
----
-
-## Collection
-
-- Places belong to exactly one Collection.
-- Collections can be renamed.
-- Collections can be reordered.
-- Collections can be deleted only after Places are reassigned.
+If Place Note is introduced later, it must remain structurally separate from Visit Note.
 
 ---
 
-## Personal Relationship
+# 11. Visit Boundaries
 
-- Favorite persists.
-- Emotion preserves `nil`.
-- Notes persist.
-- Memory Photos persist.
+A Visit is not defined by one import action.
+
+It is not defined by one selected batch.
+
+A Visit is:
+
+> One experience at one resolved Place during one continuous time period.
+
+Therefore:
+
+```text
+One import session
+may create
+many Visits
+```
+
+Example:
+
+```text
+July 18, 2026
+
+9:12   Blue Bottle
+11:36  Golden Gate Bridge
+13:48  Ferry Building
+19:32  Nopa
+```
+
+This import creates four Visits attached to four Places.
 
 ---
 
-## Import
+# 12. Photo-First Import
 
-- Import as New Collection creates new local identifiers.
-- Merge into Existing Collection preserves Collection metadata.
-- Existing Places preserve Relationship.
-- Personal memories are never imported.
+Photo-first import is a separate input path into the same Place and Visit model.
+
+## 12.1 Flow
+
+```text
+Select Photos
+    ↓
+Read capture times and coordinates
+    ↓
+Suggest Photo Groups
+    ↓
+User reviews boundaries
+    ↓
+Merge or split groups
+    ↓
+Suggest candidate Places
+    ↓
+User confirms one Place per group
+    ↓
+Create Visits
+```
+
+No Visit is written before final confirmation.
 
 ---
 
-## Synchronization
+## 12.2 Photo Group
 
-- Stable identifiers remain unchanged.
-- Tombstones synchronize correctly.
-- Last Write Wins behaves deterministically.
-- Offline edits synchronize correctly after reconnecting.
+A Photo Group is a temporary import concept.
+
+It is not a persistent Visit.
+
+```text
+PhotoImportGroup
+├── photos
+├── proposedStartTime
+├── proposedEndTime
+├── approximateCoordinate
+├── suggestedPlaces
+├── selectedPlace
+└── status
+```
+
+The system may use:
+
+- time gaps
+- spatial distance
+- Photo GPS
+- chronological continuity
+
+as grouping signals.
+
+System grouping is only a proposal.
 
 ---
 
-## Recommendation
+## 12.3 User Controls the Boundary
 
-- Recommendation can be regenerated entirely from authoritative data.
-- Deleting cached recommendation data never changes product meaning.
+The user must be able to:
+
+- accept a proposed group
+- merge nearby groups
+- split a group
+- skip a group
+- assign the group to a confirmed Place
+
+Technical clustering does not always match human meaning.
+
+Example:
+
+```text
+Hotel lobby
+Hotel room
+Hotel breakfast
+```
+
+The system may propose three groups. The user may decide they all belong to one Visit at:
+
+```text
+Hyatt Regency San Francisco
+```
+
+The reverse must also be possible. One system group around a shopping district may need to be split into several Visits.
 
 ---
 
-# Final Principles
+# 13. Place Resolution
 
-> The PlacePick data model represents relationships, not just records.
+Photo metadata can suggest where something happened.
 
-> Identity belongs to the world.
+It cannot decide what Place the Visit belongs to.
 
-> Personal Relationship belongs to the user.
+The rule is:
 
-> Collections organize relationships rather than Places.
+> Location metadata narrows the search. The user confirms Place identity.
 
-> Recommendation is derived, never authoritative.
+Each PhotoImportGroup must resolve to exactly one canonical Apple Maps Place before Visit creation.
 
-> Synchronization supports the product rather than defining it.
+The system should automatically provide the most likely Place candidate and nearby alternatives.
 
-> The local Personal Map is always the user's source of truth.
+The user may:
+
+- select the top suggested candidate
+- choose another nearby candidate
+- search Apple Maps
+- merge the group with another group
+- split the group
+- skip the group
+
+The user may not save a formal Visit anchored only to an approximate coordinate.
+
+---
+
+# 14. Unified Resolution Principle
+
+The same Place-resolution rule applies across all creation paths.
+
+## 14.1 Search-Based Creation
+
+```text
+Apple Maps Search
+    ↓
+User selects result
+    ↓
+Create or open Place
+```
+
+## 14.2 Social Import
+
+```text
+Imported text or link
+    ↓
+Extract search terms
+    ↓
+Suggest Apple Maps results
+    ↓
+User confirms Place
+    ↓
+Create or open Place
+```
+
+## 14.3 Photo-First Import
+
+```text
+Photo metadata
+    ↓
+Suggest nearby Apple Maps results
+    ↓
+User confirms Place
+    ↓
+Create Visit
+```
+
+All paths converge on the same canonical Place model.
+
+---
+
+# 15. Import Drafts
+
+Import analysis uses temporary draft models.
+
+Drafts are not confirmed user data.
+
+## 15.1 PhotoImportDraft
+
+```text
+PhotoImportDraft
+├── selectedPhotos
+├── proposedGroups
+├── createdAt
+└── state
+```
+
+## 15.2 PhotoImportGroup
+
+```text
+PhotoImportGroup
+├── id
+├── photos
+├── proposedStartTime
+├── proposedEndTime
+├── approximateLatitude
+├── approximateLongitude
+├── suggestedPlaceCandidates
+├── selectedPlaceCandidate
+└── status
+```
+
+Suggested statuses:
+
+```text
+unresolved
+resolved
+skipped
+```
+
+Only resolved groups are eligible for final import.
+
+Drafts may remain in memory only for MVP unless resumable imports become a product requirement.
+
+---
+
+# 16. Place-First Visit Creation
+
+Place-first creation begins from an already resolved Place.
+
+```text
+Open Place
+    ↓
+Add Memory
+    ↓
+Take or choose Photos
+    ↓
+Read Photo timestamps
+    ↓
+Review optional Emotion and Note
+    ↓
+Save Visit
+```
+
+Because the Place is already known, only Visit boundaries and Photos need confirmation.
+
+If selected Photos clearly represent multiple time-separated Visits, the UI must not silently combine them.
+
+The user should be asked to split or explicitly confirm the grouping.
+
+---
+
+# 17. Duplicate Rules
+
+## 17.1 Place Duplicates
+
+Primary signal:
+
+```text
+same appleMapsIdentifier
+```
+
+Supporting signals:
+
+```text
+very close coordinates
+same normalized name within a small radius
+```
+
+A matching canonical Place should open the existing Place rather than create another record.
+
+The MVP does not offer Save Another for the same real-world Place.
+
+## 17.2 Visit Duplicates
+
+Potential duplicate signals:
+
+- same Place
+- same VisitPhoto asset identifiers
+- substantially overlapping Photo sets
+- substantially overlapping time range
+
+The system should prevent importing the same Photo into multiple active Visits unless a future explicit duplication feature is introduced.
+
+## 17.3 VisitPhoto Ownership
+
+A VisitPhoto belongs to one active Visit.
+
+Moving a Photo between Visits should update its relationship rather than silently duplicate it.
+
+---
+
+# 18. Collection Model
+
+## 18.1 Proposed Fields
+
+```text
+Collection
+├── id
+├── name
+├── icon
+├── sortOrder
+├── createdAt
+├── modifiedAt
+├── deletedAt
+└── places
+```
+
+A Place may belong to one or more Collections according to `COLLECTIONS.md`.
+
+## 18.2 Collection Semantics
+
+```text
+Collection = semantic organization
+Calendar = temporal organization
+Map = spatial organization
+```
+
+These concepts must not be collapsed into one model.
+
+---
+
+# 19. Derived Views
+
+The following are views, not persistent content entities.
+
+## 19.1 Map
+
+Map displays Places and may summarize their Visits.
+
+Possible derived signals include:
+
+- latest Visit
+- Visit count
+- recent Photos
+- Favorite state
+- recommendation Importance
+
+## 19.2 Calendar
+
+Calendar groups Visits by local calendar day.
+
+```text
+Calendar Day
+    ↓
+Visits where startedAt falls on that day
+```
+
+Calendar does not create duplicate records.
+
+## 19.3 Timeline
+
+Timeline sorts Visits chronologically.
+
+```text
+sort by startedAt
+```
+
+It may be displayed globally, by Place, by Collection, or by date range.
+
+## 19.4 Daily Travel Log
+
+Daily Travel Log is generated from Visits.
+
+```text
+Filter Visits by day
+    ↓
+Sort by startedAt
+    ↓
+Render map, Photos, Emotions, and Notes
+```
+
+It is not stored as a separate source of truth.
+
+## 19.5 Shareable Day Overview
+
+A shareable overview is a generated presentation of existing Visits.
+
+It may include:
+
+- date
+- map or spatial overview
+- Places
+- Photos
+- Notes
+- Emotions
+- timestamps
+
+It must not duplicate user data.
+
+---
+
+# 20. Place Detail Projection
+
+Place Detail renders one Place and its Visits.
+
+```text
+Place
+├── Favorite
+├── Category
+├── Collections
+└── Memories
+    ├── Visit A
+    ├── Visit B
+    └── Visit C
+```
+
+Each Visit may render:
+
+```text
+Date and time
+Photos
+Emotion
+Visit Note
+```
+
+User-facing copy may say:
+
+```text
+Memories
+Add Memory
+```
+
+The persistence model continues to use:
+
+```text
+Visit
+```
+
+---
+
+# 21. Time and Time Zones
+
+Photo capture times should preserve enough information to reconstruct the local experience time.
+
+The implementation must consider:
+
+- original capture timestamp
+- original time zone when available
+- device time zone
+- travel across time zones
+- local calendar-day grouping
+
+The model must avoid permanently reinterpreting historical experiences in the user's current time zone.
+
+Product invariant:
+
+> A Visit should appear on the calendar day when it occurred locally.
+
+---
+
+# 22. Deletion Rules
+
+## 22.1 Delete Place
+
+Deleting a Place logically deletes:
+
+- the Place
+- its Visits
+- their VisitPhotos
+- Collection relationships
+
+Use tombstones rather than immediate destructive deletion when synchronization requires conflict resolution.
+
+## 22.2 Delete Visit
+
+Deleting a Visit logically deletes:
+
+- the Visit
+- its VisitPhotos
+
+It does not delete the Place.
+
+## 22.3 Delete VisitPhoto
+
+Deleting one VisitPhoto removes it from the Visit.
+
+If this would leave the Visit with zero active Photos, the UI must require one of:
+
+- add another valid Photo
+- delete the Visit
+- cancel the Photo deletion
+
+An active Visit cannot persist with zero Photos.
+
+---
+
+# 23. Synchronization Requirements
+
+All persistent user-created records should support:
+
+```text
+stable id
+createdAt
+modifiedAt
+deletedAt
+```
+
+PlacePick should use:
+
+- local-first persistence
+- automatic cloud synchronization when available
+- last-write-wins conflict handling
+- tombstones for deletion propagation
+
+Relationships must remain stable across devices.
+
+Photo storage and cross-device asset availability require explicit implementation rules outside this document.
+
+---
+
+# 24. Data Invariants
+
+## 24.1 Place Identity
+
+A Place must have:
+
+- internal stable ID
+- canonical Apple Maps identity
+- canonical name
+- canonical coordinates
+
+## 24.2 Visit Ownership
+
+Every Visit belongs to exactly one Place.
+
+## 24.3 Photo-Anchored Visit
+
+Every active Visit contains at least one active VisitPhoto with reliable capture time.
+
+## 24.4 Confirmed Place Resolution
+
+A Photo-import group cannot become a Visit until the user confirms one canonical Place.
+
+## 24.5 Emotion Ownership
+
+Emotion belongs only to Visit.
+
+## 24.6 Favorite Ownership
+
+Favorite belongs only to Place.
+
+## 24.7 No Duplicate Source of Truth
+
+Calendar, Timeline, Travel Log, and Shareable Overview are derived from Visits.
+
+They must not store duplicate copies of Visit content.
+
+## 24.8 Import Is Not Persistence
+
+Photo groups, candidate Places, and unresolved drafts are not official user data.
+
+Only final user confirmation creates Places or Visits.
+
+---
+
+# 25. Canonical Relationship Diagram
+
+```text
+Collection
+    │
+    │ organizes
+    ▼
+Place
+├── Apple Maps identity
+├── Category
+├── Favorite
+│
+└── Visit
+    ├── Photo-derived time range
+    ├── Emotion
+    ├── Note
+    │
+    └── VisitPhoto
+        ├── Image reference
+        ├── Capture time
+        └── Optional coordinate
+```
+
+Derived projections:
+
+```text
+Places + Visits
+    ├── Map
+    ├── Calendar
+    ├── Timeline
+    ├── Daily Travel Log
+    └── Shareable Overview
+```
+
+---
+
+# 26. Summary
+
+The PlacePick model is based on four distinctions:
+
+```text
+Place = where
+Visit = one experience there
+Photo = temporal evidence
+Memory = the user-facing expression of a Visit
+```
+
+The product supports both major entry points without duplicating data:
+
+```text
+Map
+    ↓
+Browse Memories by place
+```
+
+```text
+Calendar / Timeline
+    ↓
+Browse Memories by time
+```
+
+Photo-first import may analyze, cluster, and recommend.
+
+It must not decide meaning on behalf of the user.
+
+The final creation rule is:
+
+```text
+Photo Group
++
+User-confirmed Place
+=
+Visit
+```
+
+This keeps the model accurate, understandable, and extensible while preserving PlacePick's central product idea:
+
+> Remember life through places.

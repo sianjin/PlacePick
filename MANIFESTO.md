@@ -121,6 +121,33 @@ It is the product itself.
 
 ---
 
+## Two Ways to Browse, Two Ways to Capture
+
+PlacePick is built around two equally important dimensions of memory.
+
+**Browse**
+
+- **Map** answers **Where?**
+- **Calendar** answers **When?**
+
+These are not separate features. They are two complementary ways of exploring the same memories.
+
+**Capture**
+
+- **New Place** creates a Place.
+- **Photo Memory** creates one or more Memories from selected photos.
+
+The product is intentionally organized around these four core interactions:
+
+| | Browse | Capture |
+| --- | --- | --- |
+| **Place** | Map | New Place |
+| **Memory** | Calendar | Photo Memory |
+
+Everything else in PlacePick is built on top of this structure.
+
+---
+
 ## Simplicity Is a Feature
 
 Every feature carries a cost.
