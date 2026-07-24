@@ -33,6 +33,21 @@ targets:
           - CFBundleURLSchemes:
               - placepick
             CFBundleURLName: com.sianjin.PlacePick
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.sianjin.PlacePick.collection-snapshot
+            UTTypeDescription: PlacePick Collection
+            UTTypeConformsTo:
+              - public.json
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - placepickcollection
+          - UTTypeIdentifier: com.sianjin.PlacePick.place-identity
+            UTTypeDescription: PlacePick Place
+            UTTypeConformsTo:
+              - public.json
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - placepickplace
     dependencies:
       - target: PlacePickShareExtension
         embed: true
@@ -57,14 +72,32 @@ targets:
       path: PlacePickShareExtension/Info.plist
       properties:
         CFBundleDisplayName: PlacePick
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.sianjin.PlacePick.collection-snapshot
+            UTTypeDescription: PlacePick Collection
+            UTTypeConformsTo:
+              - public.json
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - placepickcollection
+          - UTTypeIdentifier: com.sianjin.PlacePick.place-identity
+            UTTypeDescription: PlacePick Place
+            UTTypeConformsTo:
+              - public.json
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - placepickplace
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
           NSExtensionAttributes:
-            NSExtensionActivationRule:
-              NSExtensionActivationSupportsWebURLWithMaxCount: 1
-              NSExtensionActivationSupportsWebPageWithMaxCount: 1
-              NSExtensionActivationSupportsText: true
+            NSExtensionActivationRule: >-
+              SUBQUERY(extensionItems, $item, SUBQUERY($item.attachments, $attachment,
+              ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.url" OR
+              ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.plain-text" OR
+              ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "com.sianjin.PlacePick.collection-snapshot" OR
+              ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "com.sianjin.PlacePick.place-identity"
+              ).@count > 0).@count > 0
 
   PlacePickTests:
     type: bundle.unit-test

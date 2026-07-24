@@ -9,6 +9,13 @@ struct PendingImport: Codable, Identifiable, Equatable {
     var sharedTitle: String?
     var sharedText: String?
     var suggestedSearchText: String?
+    /// Set when the shared payload was a PlacePick-originated Place export rather than
+    /// external text/URL content — skips Candidate Resolution, since identity is already
+    /// verified. See MVP.md §10 "Place Sharing and Import".
+    var sharedPlaceIdentity: SharedPlaceIdentity?
+    /// Set when the shared payload was a PlacePick-originated Collection export.
+    /// See MVP.md §11 "Collection Sharing and Import".
+    var sharedCollectionSnapshot: SharedCollectionSnapshot?
     let createdAt: Date
 
     init(
@@ -17,6 +24,8 @@ struct PendingImport: Codable, Identifiable, Equatable {
         sharedTitle: String? = nil,
         sharedText: String? = nil,
         suggestedSearchText: String? = nil,
+        sharedPlaceIdentity: SharedPlaceIdentity? = nil,
+        sharedCollectionSnapshot: SharedCollectionSnapshot? = nil,
         createdAt: Date = .now
     ) {
         self.id = id
@@ -24,6 +33,8 @@ struct PendingImport: Codable, Identifiable, Equatable {
         self.sharedTitle = sharedTitle
         self.sharedText = sharedText
         self.suggestedSearchText = suggestedSearchText
+        self.sharedPlaceIdentity = sharedPlaceIdentity
+        self.sharedCollectionSnapshot = sharedCollectionSnapshot
         self.createdAt = createdAt
     }
 }

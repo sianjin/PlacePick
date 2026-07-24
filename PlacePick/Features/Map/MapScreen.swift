@@ -16,6 +16,9 @@ struct MapScreen: View {
     @State private var isPresentingAddPlace = false
     @State private var isPresentingManageCollections = false
     @State private var addPlaceInitialQuery = ""
+    @State private var receivedPlaceIdentity: SharedPlaceIdentity?
+    @State private var receivedCollectionSnapshot: SharedCollectionSnapshot?
+    @State private var currentSpan = MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
 
     private let recommendationEngine: RecommendationEngine = DefaultRecommendationEngine()
     private let lastViewport = LastViewportStore()
@@ -30,12 +33,13 @@ struct MapScreen: View {
         ZStack(alignment: .top) {
             Map(position: $cameraPosition, selection: $selectedPlace) {
                 ForEach(visiblePlaces) { place in
-                    Annotation(place.name, coordinate: place.coordinate) {
-                        PlaceMapMarker(
-                            place: place,
-                            importance: recommendationEngine.importance(for: place, now: .now)
-                        )
-                        .onTapGesture { selectedPlace = place }
+                    let importance = recommendationEngine.importance(for: place, now: .now)
+                    Annotation(
+                        MapLabelPresentation.shouldShowLabel(importance: importance, span: currentSpan) ? place.name : "",
+                        coordinate: place.coordinate
+                    ) {
+                        PlaceMapMarker(place: place, importance: importance)
+                            .onTapGesture { selectedPlace = place }
                     }
                     .tag(place)
                 }
@@ -45,6 +49,9 @@ struct MapScreen: View {
                 MapCompass()
             }
             .ignoresSafeArea(edges: .top)
+            .onMapCameraChange(frequency: .continuous) { context in
+                currentSpan = context.region.span
+            }
             .onMapCameraChange(frequency: .onEnd) { context in
                 lastViewport.save(context.region)
             }
@@ -79,6 +86,14 @@ struct MapScreen: View {
         .sheet(isPresented: $isPresentingManageCollections) {
             ManageCollectionsSheet()
         }
+        .sheet(item: $receivedPlaceIdentity) { identity in
+            ReceivePlaceSheet(identity: identity) { place in
+                selectedPlace = place
+            }
+        }
+        .sheet(item: $receivedCollectionSnapshot) { snapshot in
+            ReceiveCollectionSheet(snapshot: snapshot) {}
+        }
         .task {
             CollectionRepository(modelContext: modelContext).seedSuggestedCollectionsIfNeeded()
             locationAuthorization.requestWhenInUseAuthorizationIfNeeded()
@@ -86,17 +101,47 @@ struct MapScreen: View {
         }
         .onChange(of: pendingImportCoordinator.pendingImport) { _, newValue in
             guard newValue != nil else { return }
-            openAddPlaceFromPendingImport()
+            handlePendingImport()
+        }
+    }
+
+    /// Routes a received PendingImport to the correct entry point. Search-text imports
+    /// (external content) converge on AddPlaceScreen per IMPORT_PIPELINE.md "Import
+    /// Boundary". PlacePick-originated Place/Collection shares already carry verified
+    /// identity, so they skip Candidate Resolution entirely — see MVP.md §10 and §11.
+    private func handlePendingImport() {
+        guard let pendingImport = pendingImportCoordinator.consumePendingImport() else { return }
+
+        if let snapshot = pendingImport.sharedCollectionSnapshot {
+            receivedCollectionSnapshot = snapshot
+            return
+        }
+
+        if let identity = pendingImport.sharedPlaceIdentity {
+            openReceivedPlace(identity)
+            return
+        }
+
+        openAddPlaceFromPendingImport(searchText: pendingImport.suggestedSearchText ?? "")
+    }
+
+    /// §10.2 Receiving an Existing Place: dedup happens before any UI is shown — an
+    /// already-saved Place opens directly with no Collection-choice step.
+    private func openReceivedPlace(_ identity: SharedPlaceIdentity) {
+        let service = PlaceCreationService(repository: PlaceRepository(modelContext: modelContext))
+        if let existing = service.findExisting(matching: identity) {
+            selectedPlace = existing
+        } else {
+            receivedPlaceIdentity = identity
         }
     }
 
     /// Every capture path — manual or shared — converges on the same AddPlaceScreen
     /// (IMPORT_PIPELINE.md "Import Boundary"). The suggested search text is only ever a
     /// starting point the user can edit or clear; it never bypasses MapKit selection.
-    private func openAddPlaceFromPendingImport() {
-        guard let pendingImport = pendingImportCoordinator.consumePendingImport() else { return }
+    private func openAddPlaceFromPendingImport(searchText: String) {
         selectedPlace = nil
-        addPlaceInitialQuery = pendingImport.suggestedSearchText ?? ""
+        addPlaceInitialQuery = searchText
 
         if isPresentingAddPlace {
             // Force a fresh AddPlaceScreen instance so the new initialQuery actually applies.
@@ -113,6 +158,7 @@ struct MapScreen: View {
     private func resolveInitialViewport() {
         if let savedRegion = lastViewport.load() {
             cameraPosition = .region(savedRegion)
+            currentSpan = savedRegion.span
         } else if locationAuthorization.authorizationStatus == .authorizedWhenInUse
             || locationAuthorization.authorizationStatus == .authorizedAlways {
             cameraPosition = .userLocation(fallback: .automatic)

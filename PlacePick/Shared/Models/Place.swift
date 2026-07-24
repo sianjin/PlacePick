@@ -64,3 +64,16 @@ final class Place {
         self.deletedAt = deletedAt
     }
 }
+
+extension Place {
+    /// Only enough to identify the Place — never Collection, Favorite, Emotion, Note,
+    /// or Memory Photo. See DATA_MODEL.md "Shared Place Identity".
+    var sharedIdentity: SharedPlaceIdentity {
+        SharedPlaceIdentity(
+            appleMapIdentifier: appleMapIdentifier,
+            name: name,
+            latitude: latitude,
+            longitude: longitude
+        )
+    }
+}

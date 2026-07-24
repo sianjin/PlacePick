@@ -27,4 +27,24 @@ struct PendingImportStoreTests {
 
         #expect(PendingImportStore.load() == nil)
     }
+
+    @Test func savedSharedPlaceIdentityRoundTrips() {
+        let identity = SharedPlaceIdentity(appleMapIdentifier: "a", name: "Ichiran", latitude: 35.66, longitude: 139.70)
+        PendingImportStore.save(PendingImport(sharedPlaceIdentity: identity))
+        defer { PendingImportStore.clear() }
+
+        #expect(PendingImportStore.load()?.sharedPlaceIdentity == identity)
+    }
+
+    @Test func savedSharedCollectionSnapshotRoundTrips() {
+        let snapshot = SharedCollectionSnapshot(
+            suggestedName: "Tokyo Trip",
+            suggestedIcon: "airplane",
+            places: [SharedPlaceIdentity(appleMapIdentifier: "a", name: "Ichiran", latitude: 35.66, longitude: 139.70)]
+        )
+        PendingImportStore.save(PendingImport(sharedCollectionSnapshot: snapshot))
+        defer { PendingImportStore.clear() }
+
+        #expect(PendingImportStore.load()?.sharedCollectionSnapshot == snapshot)
+    }
 }

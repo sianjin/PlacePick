@@ -56,6 +56,39 @@ final class PlaceCreationService {
         return .created(place)
     }
 
+    /// Received Places already carry a verified Apple Maps identity from the sender —
+    /// no MapKit re-resolution needed. See MVP.md §10.1/§10.2: dedup by identifier first,
+    /// falling back to name+coordinate proximity per §10.3. The new local relationship
+    /// always starts blank; the sender's personal memory is never copied.
+    func createPlace(
+        from identity: SharedPlaceIdentity,
+        collection: PlaceCollection
+    ) -> PlaceCreationResult {
+        if let existing = findExisting(matching: identity) {
+            return .existing(existing)
+        }
+
+        let place = Place(
+            appleMapIdentifier: identity.appleMapIdentifier,
+            name: identity.name,
+            latitude: identity.latitude,
+            longitude: identity.longitude,
+            collection: collection
+        )
+        repository.insert(place)
+        return .created(place)
+    }
+
+    /// §10.3 Duplicate Identity: Apple Maps identifier first, falling back to a very close
+    /// coordinate with a matching normalized name.
+    func findExisting(matching identity: SharedPlaceIdentity) -> Place? {
+        if let identifier = identity.appleMapIdentifier,
+           let existing = repository.findByAppleMapIdentifier(identifier) {
+            return existing
+        }
+        return repository.findNearbyMatch(name: identity.name, latitude: identity.latitude, longitude: identity.longitude)
+    }
+
     func replaceIdentity(
         for place: Place,
         with mapItem: MKMapItem

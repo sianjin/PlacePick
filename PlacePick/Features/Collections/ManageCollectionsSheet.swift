@@ -10,6 +10,7 @@ struct ManageCollectionsSheet: View {
     @State private var editingCollection: PlaceCollection?
     @State private var pendingDeletion: PlaceCollection?
     @State private var isReordering = false
+    @State private var isPresentingSharePicker = false
     @State private var collectionAwaitingDeletion: (collection: PlaceCollection, destination: PlaceCollection?)?
 
     private var repository: CollectionRepository {
@@ -50,10 +51,27 @@ struct ManageCollectionsSheet: View {
                     Button("Done") { dismiss() }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button(isReordering ? "Done" : "Reorder") {
-                        isReordering.toggle()
+                    if isReordering {
+                        Button("Done") { isReordering = false }
+                    } else {
+                        Menu {
+                            Button {
+                                isPresentingSharePicker = true
+                            } label: {
+                                Label("Share Collection…", systemImage: "square.and.arrow.up")
+                            }
+                            .disabled(collections.isEmpty)
+
+                            Button {
+                                isReordering = true
+                            } label: {
+                                Label("Reorder", systemImage: "arrow.up.arrow.down")
+                            }
+                            .disabled(collections.count < 2)
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                        }
                     }
-                    .disabled(collections.count < 2)
                 }
                 ToolbarItem(placement: .bottomBar) {
                     Button {
@@ -73,6 +91,9 @@ struct ManageCollectionsSheet: View {
                     repository.rename(collection, to: name)
                     repository.setIcon(collection, to: icon)
                 }
+            }
+            .sheet(isPresented: $isPresentingSharePicker) {
+                ShareCollectionPickerSheet(collections: collections, modelContext: modelContext)
             }
             .sheet(item: $pendingDeletion) { collection in
                 DeleteCollectionSheet(
@@ -102,6 +123,41 @@ struct ManageCollectionsSheet: View {
         var reordered = collections
         reordered.move(fromOffsets: source, toOffset: destination)
         repository.reorder(reordered)
+    }
+}
+
+private struct ShareCollectionPickerSheet: View {
+    let collections: [PlaceCollection]
+    let modelContext: ModelContext
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List(collections) { collection in
+                HStack {
+                    Image(systemName: collection.icon)
+                        .frame(width: 24)
+                    Text(collection.name)
+                    Spacer()
+                    ShareLink(
+                        item: TransferableCollectionSnapshot(
+                            snapshot: CollectionSnapshotBuilder.makeSnapshot(for: collection, modelContext: modelContext)
+                        ),
+                        preview: SharePreview(collection.name, image: sharePreviewBadgeImage(icon: collection.icon))
+                    ) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                }
+            }
+            .navigationTitle("Share a Collection")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
     }
 }
 

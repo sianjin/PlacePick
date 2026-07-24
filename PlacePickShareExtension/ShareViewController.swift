@@ -20,11 +20,45 @@ final class ShareViewController: UIViewController {
             return
         }
 
+        if let snapshot = await Self.loadCollectionSnapshot(from: attachments) {
+            completeAndOpenApp(sharedCollectionSnapshot: snapshot)
+            return
+        }
+        if let identity = await Self.loadPlaceIdentity(from: attachments) {
+            completeAndOpenApp(sharedPlaceIdentity: identity)
+            return
+        }
+
         let sharedTitle = item.attributedContentText?.string
         let url = await Self.loadURL(from: attachments)
         let text = await Self.loadText(from: attachments)
 
         completeAndOpenApp(title: sharedTitle, text: text, url: url)
+    }
+
+    private static func loadCollectionSnapshot(from attachments: [NSItemProvider]) async -> SharedCollectionSnapshot? {
+        guard let data = await loadData(from: attachments, typeIdentifier: UTType.placePickCollectionSnapshot.identifier) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(SharedCollectionSnapshot.self, from: data)
+    }
+
+    private static func loadPlaceIdentity(from attachments: [NSItemProvider]) async -> SharedPlaceIdentity? {
+        guard let data = await loadData(from: attachments, typeIdentifier: UTType.placePickPlaceIdentity.identifier) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(SharedPlaceIdentity.self, from: data)
+    }
+
+    private static func loadData(from attachments: [NSItemProvider], typeIdentifier: String) async -> Data? {
+        guard let provider = attachments.first(where: { $0.hasItemConformingToTypeIdentifier(typeIdentifier) }) else {
+            return nil
+        }
+        return await withCheckedContinuation { continuation in
+            provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, _ in
+                continuation.resume(returning: data)
+            }
+        }
     }
 
     private static func loadURL(from attachments: [NSItemProvider]) async -> URL? {
@@ -52,12 +86,23 @@ final class ShareViewController: UIViewController {
     private func completeAndOpenApp(title: String?, text: String?, url: URL?) {
         let candidate = CandidateExtractor.extractSearchText(title: title, text: text, url: url)
 
-        let pendingImport = PendingImport(
+        complete(with: PendingImport(
             sourceURL: url,
             sharedTitle: title,
             sharedText: text,
             suggestedSearchText: candidate
-        )
+        ))
+    }
+
+    private func completeAndOpenApp(sharedPlaceIdentity: SharedPlaceIdentity) {
+        complete(with: PendingImport(sharedPlaceIdentity: sharedPlaceIdentity))
+    }
+
+    private func completeAndOpenApp(sharedCollectionSnapshot: SharedCollectionSnapshot) {
+        complete(with: PendingImport(sharedCollectionSnapshot: sharedCollectionSnapshot))
+    }
+
+    private func complete(with pendingImport: PendingImport) {
         PendingImportStore.save(pendingImport)
 
         extensionContext?.completeRequest(returningItems: nil) { [weak self] _ in

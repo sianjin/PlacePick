@@ -64,7 +64,7 @@ struct PlaceDetailSheet: View {
                         Button {
                             isPresentingOpenExternally = true
                         } label: {
-                            Image(systemName: "arrow.up.forward.square")
+                            Image(systemName: "car.fill")
                                 .font(.title2)
                         }
                         .buttonStyle(.plain)
@@ -92,7 +92,12 @@ struct PlaceDetailSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
-                        Button("Replace Place") { isPresentingReplacePlace = true }
+                        ShareLink(
+                            item: TransferablePlaceIdentity(identity: place.sharedIdentity),
+                            preview: SharePreview(place.name, image: sharePreviewBadgeImage(icon: place.collection.icon))
+                        ) {
+                            Label("Share Place", systemImage: "square.and.arrow.up")
+                        }
                         Button("Delete", role: .destructive) { isPresentingDeleteConfirmation = true }
                     } label: {
                         Image(systemName: "ellipsis.circle")
