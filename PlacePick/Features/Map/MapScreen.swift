@@ -48,13 +48,15 @@ struct MapScreen: View {
                         visits: visitsByPlaceID[place.id] ?? [],
                         now: .now
                     )
-                    Annotation(
-                        MapLabelPresentation.shouldShowLabel(importance: importance, span: currentSpan) ? place.name : "",
-                        coordinate: place.coordinate
-                    ) {
-                        PlaceMapMarker(place: place, importance: importance)
+                    if MapLabelPresentation.shouldShowMarker(importance: importance, span: currentSpan) {
+                        Annotation(
+                            MapLabelPresentation.shouldShowLabel(importance: importance, span: currentSpan) ? place.name : "",
+                            coordinate: place.coordinate
+                        ) {
+                            PlaceMapMarker(place: place, importance: importance)
+                        }
+                        .tag(place)
                     }
-                    .tag(place)
                 }
                 UserAnnotation()
             }
@@ -120,13 +122,23 @@ struct MapScreen: View {
             ReceiveCollectionSheet(snapshot: snapshot) {}
         }
         .task {
-            CollectionRepository(modelContext: modelContext).seedSuggestedCollectionsIfNeeded()
+            let collectionRepository = CollectionRepository(modelContext: modelContext)
+            collectionRepository.seedSuggestedCollectionsIfNeeded()
+            collectionRepository.mergeDuplicateCollections()
             locationAuthorization.requestWhenInUseAuthorizationIfNeeded()
             resolveInitialViewport()
         }
         .onChange(of: pendingImportCoordinator.pendingImport) { _, newValue in
             guard newValue != nil else { return }
             handlePendingImport()
+        }
+        .onChange(of: collections) { _, _ in
+            // CloudKit sync is asynchronous and can keep merging in remote records for
+            // seconds to minutes after launch — a single merge pass in .task above only
+            // sees what's synced at that instant. Re-running on every change to the
+            // Collections @Query catches duplicates that arrive later (e.g. a batch synced
+            // down from another device right after this one already finished its own pass).
+            CollectionRepository(modelContext: modelContext).mergeDuplicateCollections()
         }
     }
 

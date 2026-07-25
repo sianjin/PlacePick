@@ -69,11 +69,7 @@ Choose Photos
 
 ↓
 
-Review Memory Groups
-
-↓
-
-Confirm Places
+Review Groups & Confirm Places
 
 ↓
 
@@ -94,9 +90,14 @@ No Memories are created at this stage.
 
 ---
 
-# Stage 2 — Review Memory Groups
+# Stage 2 — Review Groups & Confirm Places
 
-The system suggests groups that likely belong to the same visit.
+The system suggests groups that likely belong to the same visit. For each group, the
+user sees its photos, its suggested place, and its Collection together, in one place —
+reviewing group boundaries, confirming a place, and choosing a Collection are all
+decisions about the same group, not separate screens the user has to hold in their
+head across. A single import can span unrelated kinds of places (a hike and a
+restaurant), so Collection is chosen per group, never once for the whole batch.
 
 Example:
 
@@ -107,14 +108,25 @@ Example:
 
 9:12 – 9:40
 
+Blue Bottle Coffee ✓
+Food
+
 ──────────────────
 
 📷📷
 
 11:20 – 11:45
 
+[ mini-map: tap a nearby pin ]
+Search for a Place
+
 ──────────────────
 ```
+
+Searching for a place offers two ways to pick one: typing in the search bar, or tapping
+a pin directly on a small map centered on the group's photos — the same choice Photos.app
+itself offers on a photo's own location screen. The mini-map always shows real nearby
+points of interest; it does not depend on a suggestion existing.
 
 The user may:
 
@@ -122,28 +134,14 @@ The user may:
 - Split groups
 - Move photos
 - Remove photos
+- Reorder photos within a group by dragging — the first photo becomes the Memory's cover
+  photo, so dragging a favorite to the front is how the cover is chosen; no separate
+  "set as cover" action exists
+- Accept the suggested place, or choose another
+- Accept the default Collection, or choose another
 
-Groups remain temporary until confirmed.
-
----
-
-# Stage 3 — Confirm Places
-
-For each group, PlacePick suggests a place.
-
-Example:
-
-```
-📷📷📷
-
-↓
-
-Blue Bottle Coffee ✓
-```
-
-The user may accept or choose another place.
-
-Every Memory must be associated with exactly one Place.
+Groups remain temporary until confirmed. Every Memory must be associated with exactly
+one Place and one Collection.
 
 ---
 

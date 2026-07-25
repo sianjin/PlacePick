@@ -1,0 +1,15 @@
+import UIKit
+
+/// Imperative haptics for actions that dismiss their view immediately after (e.g. delete
+/// then dismiss) — SwiftUI's `.sensoryFeedback(_:trigger:)` needs the view to stay alive
+/// long enough to observe the trigger change, which delete-then-dismiss doesn't guarantee.
+/// Prefer `.sensoryFeedback` directly wherever the view sticks around (e.g. a Toggle).
+enum Haptics {
+    static func success() {
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+
+    static func delete() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+}

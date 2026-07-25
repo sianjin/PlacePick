@@ -8,14 +8,13 @@ import MapKit
 enum NearbyPlaceSearchService {
     private static let searchRadiusMeters: CLLocationDistance = 200
 
+    /// MKLocalSearch.Request needs a naturalLanguageQuery to reliably return results —
+    /// with only a region and resultTypes set (no query text), Apple's API frequently
+    /// returns zero results even in places with plenty of real POIs. MKLocalPointsOfInterestRequest
+    /// is the API actually designed for "what's near this coordinate," with no text query
+    /// required, and reliably surfaces results MKLocalSearch silently missed.
     static func nearbyPlaces(around coordinate: CLLocationCoordinate2D) async -> [MKMapItem] {
-        let request = MKLocalSearch.Request()
-        request.region = MKCoordinateRegion(center: coordinate, latitudinalMeters: searchRadiusMeters, longitudinalMeters: searchRadiusMeters)
-        // POI-only excludes any coordinate Apple Maps hasn't tagged as a formal point of
-        // interest — many real photo locations (trailheads, scenic spots, addresses,
-        // unlisted parks) have valid GPS but no POI listing, so they'd never get a
-        // suggestion even though Photos itself can show the location on a map.
-        request.resultTypes = [.pointOfInterest, .address]
+        let request = MKLocalPointsOfInterestRequest(center: coordinate, radius: searchRadiusMeters)
 
         let search = MKLocalSearch(request: request)
         guard let response = try? await search.start() else { return [] }

@@ -29,15 +29,38 @@ final class CollectionRepository {
         return collection
     }
 
+    /// Seeds default Collections only when the synced store genuinely has none. This must
+    /// not use a local flag (e.g. UserDefaults) to remember "already seeded" — that flag is
+    /// per-device, but Collections sync via CloudKit, so each device/reinstall would think
+    /// it's the first launch and insert its own duplicate batch. Checking the actual synced
+    /// data is the only thing that stays consistent across devices.
     func seedSuggestedCollectionsIfNeeded() {
         guard fetchAllOrdered().isEmpty else { return }
-        guard !UserDefaults.standard.bool(forKey: hasSeededSuggestionsKey) else { return }
 
         for (index, suggestion) in SuggestedCollection.allCases.enumerated() {
             modelContext.insert(PlaceCollection(name: suggestion.name, icon: suggestion.icon, order: index))
         }
         try? modelContext.save()
-        UserDefaults.standard.set(true, forKey: hasSeededSuggestionsKey)
+    }
+
+    /// One-time cleanup for installs affected by the pre-fix duplicate-seeding bug: several
+    /// devices each inserted their own "Food"/"Drink"/etc. batch before seedSuggestedCollectionsIfNeeded
+    /// checked synced state, and CloudKit merged all the batches together instead of deduping
+    /// them (it has no concept of these rows being "the same" Collection). This merges
+    /// same-named Collections into the lowest-`order` survivor, reassigning every affected
+    /// Place before deleting the rest — safe to run repeatedly since a store with no
+    /// duplicates left is a no-op.
+    func mergeDuplicateCollections() {
+        let groups = Dictionary(grouping: fetchAllOrdered(), by: \.name)
+        guard groups.values.contains(where: { $0.count > 1 }) else { return }
+
+        for (_, duplicates) in groups where duplicates.count > 1 {
+            let sorted = duplicates.sorted { $0.order < $1.order }
+            let survivor = sorted[0]
+            for duplicate in sorted.dropFirst() {
+                try? delete(duplicate, reassigningTo: survivor)
+            }
+        }
     }
 
     func rename(_ collection: PlaceCollection, to name: String) {
@@ -91,6 +114,4 @@ final class CollectionRepository {
         modelContext.delete(collection)
         try? modelContext.save()
     }
-
-    private let hasSeededSuggestionsKey = "com.sianjin.PlacePick.hasSeededSuggestedCollections"
 }

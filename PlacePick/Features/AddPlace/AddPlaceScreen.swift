@@ -1,10 +1,12 @@
 import SwiftUI
 import SwiftData
 import MapKit
+import StoreKit
 
 struct AddPlaceScreen: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.requestReview) private var requestReview
 
     @StateObject private var searchService = MapSearchService()
     @State private var query: String
@@ -112,6 +114,10 @@ struct AddPlaceScreen: View {
             let result = try creationService.createPlace(from: mapItem, relationship: relationship)
             switch result {
             case .created:
+                Haptics.success()
+                if ReviewRequestTrigger.recordSuccessfulSaveAndShouldRequestReview() {
+                    requestReview()
+                }
                 dismiss()
             case .existing(let place):
                 existingPlace = place

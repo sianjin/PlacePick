@@ -21,6 +21,7 @@ struct MemoryDetailScreen: View {
     @State private var isPresentingAddPhotosPicker = false
     @State private var isAddingPhotos = false
     @State private var addPhotosErrorMessage: String?
+    @State private var isPresentingReorderPhotos = false
 
     private var visitRepository: VisitRepository {
         VisitRepository(modelContext: modelContext)
@@ -84,13 +85,19 @@ struct MemoryDetailScreen: View {
                     Button("Done") { dismiss() }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Menu {
+    Menu {
                         Button {
                             isPresentingAddPhotosPicker = true
                         } label: {
                             Label("Add Photos", systemImage: "photo.badge.plus")
                         }
                         .disabled(isAddingPhotos)
+                        Button {
+                            isPresentingReorderPhotos = true
+                        } label: {
+                            Label("Reorder Photos", systemImage: "arrow.up.arrow.down")
+                        }
+                        .disabled(photos.count < 2)
                         Button("Delete Memory", role: .destructive) {
                             isPresentingDeleteMemoryConfirmation = true
                         }
@@ -105,6 +112,12 @@ struct MemoryDetailScreen: View {
                     visit.modifiedAt = .now
                     visitRepository.save()
                     isEditingNote = false
+                }
+            }
+            .sheet(isPresented: $isPresentingReorderPhotos) {
+                ReorderPhotosSheet(photos: photos) { reordered in
+                    visitPhotoRepository.reorder(reordered)
+                    reloadPhotos()
                 }
             }
             .photosPicker(
@@ -207,7 +220,85 @@ struct MemoryDetailScreen: View {
 
     private func deleteVisit() {
         visitRepository.softDelete(visit)
+        Haptics.delete()
         dismiss()
+    }
+}
+
+/// Drag-to-reorder grid — dragging a photo to the first position is how the user sets it
+/// as the cover photo (PlaceDetailSheet.coverPhoto is simply the first Photo by sortOrder),
+/// so there is no separate "set as cover" action.
+private struct ReorderPhotosSheet: View {
+    let photos: [VisitPhoto]
+    let onSave: ([VisitPhoto]) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var ordered: [VisitPhoto]
+    @State private var draggingPhotoID: VisitPhoto.ID?
+
+    init(photos: [VisitPhoto], onSave: @escaping ([VisitPhoto]) -> Void) {
+        self.photos = photos
+        self.onSave = onSave
+        _ordered = State(initialValue: photos)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 6) {
+                    ForEach(ordered) { photo in
+                        PhotoAssetThumbnailView(localAssetIdentifier: photo.localAssetIdentifier, fallbackIcon: "photo")
+                            .aspectRatio(1, contentMode: .fit)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .overlay(alignment: .topLeading) {
+                                if photo.id == ordered.first?.id {
+                                    Text("Cover")
+                                        .font(.caption2.weight(.semibold))
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(.black.opacity(0.6), in: Capsule())
+                                        .foregroundStyle(.white)
+                                        .padding(4)
+                                }
+                            }
+                            .opacity(draggingPhotoID == photo.id ? 0.5 : 1)
+                            .draggable(photo.id.uuidString) {
+                                PhotoAssetThumbnailView(localAssetIdentifier: photo.localAssetIdentifier, fallbackIcon: "photo")
+                                    .frame(width: 80, height: 80)
+                                    .onAppear { draggingPhotoID = photo.id }
+                            }
+                            .dropDestination(for: String.self) { items, _ in
+                                draggingPhotoID = nil
+                                guard let draggedIDString = items.first,
+                                      let draggedID = UUID(uuidString: draggedIDString),
+                                      let sourceIndex = ordered.firstIndex(where: { $0.id == draggedID }),
+                                      let destinationIndex = ordered.firstIndex(where: { $0.id == photo.id }) else { return false }
+                                withAnimation {
+                                    ordered.move(
+                                        fromOffsets: IndexSet(integer: sourceIndex),
+                                        toOffset: destinationIndex > sourceIndex ? destinationIndex + 1 : destinationIndex
+                                    )
+                                }
+                                return true
+                            }
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("Reorder Photos")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        onSave(ordered)
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }
 

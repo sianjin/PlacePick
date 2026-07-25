@@ -58,6 +58,7 @@ struct PlaceDetailSheet: View {
                                 .font(.title2)
                         }
                         .buttonStyle(.plain)
+                        .sensoryFeedback(.selection, trigger: place.isFavorite)
 
                         Spacer()
 
@@ -128,6 +129,7 @@ struct PlaceDetailSheet: View {
                 Button("Delete", role: .destructive) {
                     let repository = PlaceRepository(modelContext: modelContext)
                     repository.softDelete(place)
+                    Haptics.delete()
                     dismiss()
                 }
                 Button("Cancel", role: .cancel) {}

@@ -1,9 +1,18 @@
 import SwiftUI
 import SwiftData
 
+private enum AppTab: String {
+    case map
+    case calendar
+}
+
 @main
 struct PlacePickApp: App {
     @StateObject private var pendingImportCoordinator = PendingImportCoordinator()
+    /// Persisted so relaunching the app returns to the tab the user was last on rather
+    /// than always resetting to Map — "opening the app should feel like continuing a
+    /// conversation."
+    @AppStorage("com.sianjin.PlacePick.selectedTab") private var selectedTab = AppTab.map
 
     /// CloudKit-backed so Places/Memories survive reinstalls and sync across the user's
     /// devices — see DATA_MODEL.md §23 "automatic cloud synchronization when available."
@@ -25,12 +34,14 @@ struct PlacePickApp: App {
 
     var body: some Scene {
         WindowGroup {
-            TabView {
+            TabView(selection: $selectedTab) {
                 MapScreen()
                     .tabItem { Label("Map", systemImage: "map") }
+                    .tag(AppTab.map)
 
                 CalendarScreen()
                     .tabItem { Label("Calendar", systemImage: "calendar") }
+                    .tag(AppTab.calendar)
             }
             .environmentObject(pendingImportCoordinator)
             .onOpenURL { url in

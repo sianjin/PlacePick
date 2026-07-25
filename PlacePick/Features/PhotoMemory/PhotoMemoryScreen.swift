@@ -19,7 +19,6 @@ struct PhotoMemoryScreen: View {
     private enum Stage {
         case choosingPhotos
         case reviewingGroups
-        case confirmingPlaces
         case reviewingAndCreating
         case created
     }
@@ -31,9 +30,7 @@ struct PhotoMemoryScreen: View {
                 case .choosingPhotos:
                     choosePhotosStage
                 case .reviewingGroups:
-                    ReviewGroupsStage(draft: $draft, onContinue: { stage = .confirmingPlaces })
-                case .confirmingPlaces:
-                    ConfirmPlacesStage(draft: $draft, onContinue: { stage = .reviewingAndCreating })
+                    ReviewGroupsStage(draft: $draft, onContinue: { stage = .reviewingAndCreating })
                 case .reviewingAndCreating:
                     ReviewAndCreateStage(draft: draft, onCreated: { stage = .created })
                 case .created:

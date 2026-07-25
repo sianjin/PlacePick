@@ -1,5 +1,6 @@
 import Foundation
 import MapKit
+import SwiftData
 
 /// A candidate Photo pulled from the system library during Memory Creation, before any
 /// Visit exists. See DATA_MODEL.md §24.8 "Import Is Not Persistence" — this is not a
@@ -29,11 +30,16 @@ struct PhotoImportGroup: Identifiable {
     let id: UUID
     var photos: [PhotoImportCandidate]
     var status: Status
+    /// Chosen alongside the Place, in the same card — see MEMORY_CREATION.md Stage 2.
+    /// A Photo Memory batch can span unrelated kinds of places (a hike and a restaurant),
+    /// so this lives per group rather than once for the whole draft.
+    var collection: PlaceCollection?
 
-    init(id: UUID = UUID(), photos: [PhotoImportCandidate], status: Status = .unresolved) {
+    init(id: UUID = UUID(), photos: [PhotoImportCandidate], status: Status = .unresolved, collection: PlaceCollection? = nil) {
         self.id = id
         self.photos = photos
         self.status = status
+        self.collection = collection
     }
 
     var proposedStartTime: Date? { photos.map(\.capturedAt).min() }

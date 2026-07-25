@@ -60,4 +60,15 @@ final class VisitPhotoRepository {
         photo.modifiedAt = .now
         try? modelContext.save()
     }
+
+    /// Rewrites sortOrder for every Photo in `photos` (already in the desired display
+    /// order) — the same array both drives the Memory's photo carousel and supplies the
+    /// cover photo shown elsewhere (PlaceDetailSheet.coverPhoto is simply `.first`), so
+    /// dragging a photo to the front is all "set as cover" needs to be.
+    func reorder(_ photos: [VisitPhoto]) {
+        for (index, photo) in photos.enumerated() {
+            photo.sortOrder = index
+        }
+        try? modelContext.save()
+    }
 }
