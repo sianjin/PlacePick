@@ -1,10 +1,10 @@
 import Foundation
 import SwiftData
 
-/// This pass supports at most one active Visit per Place — a compatibility shim so
-/// existing single-relationship UI (PlaceDetailSheet, PersonalInfoForm) can read/write
-/// Emotion and Note without a Memories list. Multi-Visit UI is a later step; the schema
-/// itself does not enforce this limit. See DATA_MODEL.md §7.
+/// A Place may have many Visits (Memories) — see fetchVisits(for:) and DATA_MODEL.md §7,
+/// §20. findActiveVisit/findOrCreateActiveVisit return a single Visit for call sites that
+/// only ever need "a" Visit to attach to (e.g. seeding one at Place creation); they are not
+/// a limit on how many Visits a Place can have.
 @MainActor
 final class VisitRepository {
     private let modelContext: ModelContext
@@ -16,9 +16,21 @@ final class VisitRepository {
     func findActiveVisit(for place: Place) -> Visit? {
         let placeID = place.id
         let descriptor = FetchDescriptor<Visit>(
-            predicate: #Predicate { $0.place.id == placeID && $0.deletedAt == nil }
+            predicate: #Predicate { $0.place?.id == placeID && $0.deletedAt == nil }
         )
         return (try? modelContext.fetch(descriptor))?.first
+    }
+
+    /// All active Visits (Memories) for a Place, most recent first — DATA_MODEL.md §20
+    /// Place Detail Projection. A Place may have many Visits; this is the full list, not
+    /// the single-Visit compatibility shim used elsewhere in this file.
+    func fetchVisits(for place: Place) -> [Visit] {
+        let placeID = place.id
+        let descriptor = FetchDescriptor<Visit>(
+            predicate: #Predicate { $0.place?.id == placeID && $0.deletedAt == nil },
+            sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+        )
+        return (try? modelContext.fetch(descriptor)) ?? []
     }
 
     /// Returns the Place's existing Visit, or creates a blank one. Used wherever the UI
@@ -53,6 +65,19 @@ final class VisitRepository {
     }
 
     func save() {
+        try? modelContext.save()
+    }
+
+    /// Deletes a Visit and cascades to its VisitPhotos — DATA_MODEL.md §22.2. Does not
+    /// delete the Place.
+    func softDelete(_ visit: Visit) {
+        let visitPhotoRepository = VisitPhotoRepository(modelContext: modelContext)
+        for photo in visitPhotoRepository.fetchPhotos(for: visit) {
+            photo.deletedAt = .now
+            photo.modifiedAt = .now
+        }
+        visit.deletedAt = .now
+        visit.modifiedAt = .now
         try? modelContext.save()
     }
 }

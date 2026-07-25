@@ -19,22 +19,29 @@ enum PlaceEmotion: String, Codable {
 /// "Memory"; persistence-layer term is "Visit" — see DATA_MODEL.md §2–3. Emotion and Note
 /// belong here, not on Place, because the same Place may feel different across visits.
 ///
-/// This pass creates at most one Visit per Place (a compatibility shim so existing
-/// single-relationship UI keeps working). The model itself does not enforce that limit —
-/// multi-Visit UI (Calendar, Day Detail, Photo-first import) is a later step.
+/// A Place may have many Visits (DATA_MODEL.md §3.2) — see VisitRepository.fetchVisits(for:).
 @Model
 final class Visit {
-    @Attribute(.unique) var id: UUID
+    var id: UUID = UUID()
 
-    var place: Place
-    var startedAt: Date
-    var endedAt: Date
+    /// Optional only for CloudKit sync compatibility (SwiftData requires every
+    /// relationship to be optional) — DATA_MODEL.md §7.2 "A Visit cannot exist without a
+    /// resolved Place" remains a hard product invariant; every call site still treats this
+    /// as required and must resolve it.
+    var place: Place?
+    var startedAt: Date = Date.now
+    var endedAt: Date = Date.now
     var emotion: PlaceEmotion?
-    var note: String
+    var note: String = ""
 
-    var createdAt: Date
-    var modifiedAt: Date
+    var createdAt: Date = Date.now
+    var modifiedAt: Date = Date.now
     var deletedAt: Date?
+
+    /// Inverse of VisitPhoto.visit — required by CloudKit ("all relationships must have an
+    /// inverse"). Application code queries Photos by Visit via VisitPhotoRepository, not
+    /// through this array.
+    @Relationship(inverse: \VisitPhoto.visit) var photos: [VisitPhoto]? = []
 
     init(
         id: UUID = UUID(),

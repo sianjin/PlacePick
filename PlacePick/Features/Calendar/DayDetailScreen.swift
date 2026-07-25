@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import MapKit
 
 /// A chronological journal of one day's Memories. See DAY_DETAIL.md — presents Memory
 /// Cards in capture order; multiple visits to the same Place remain separate, never merged.
@@ -9,6 +10,8 @@ struct DayDetailScreen: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var selectedVisit: Visit?
+    @State private var isShowingSavePrompt = false
+    @State private var saveState: DaySaveState = .idle
 
     private var visitRepository: VisitRepository {
         VisitRepository(modelContext: modelContext)
@@ -16,18 +19,32 @@ struct DayDetailScreen: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    ForEach(visitRepository.fetchVisits(on: day)) { visit in
-                        Button {
-                            selectedVisit = visit
-                        } label: {
-                            MemoryCard(visit: visit)
+            let visits = visitRepository.fetchVisits(on: day)
+
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        DayMap(visits: visits, selectedVisit: $selectedVisit)
+
+                        ForEach(visits) { visit in
+                            Button {
+                                selectedVisit = visit
+                            } label: {
+                                MemoryCard(visit: visit)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
+                    .padding()
                 }
-                .padding()
+
+                if isShowingSavePrompt {
+                    DaySavePrompt(state: saveState) {
+                        saveSnapshot(visits: visits)
+                    }
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
             .navigationTitle(day.formatted(.dateTime.month(.wide).day().year()))
             .navigationBarTitleDisplayMode(.inline)
@@ -39,7 +56,231 @@ struct DayDetailScreen: View {
             .sheet(item: $selectedVisit) { visit in
                 MemoryDetailScreen(visit: visit)
             }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.userDidTakeScreenshotNotification)) { _ in
+                saveState = .idle
+                withAnimation { isShowingSavePrompt = true }
+            }
         }
+    }
+
+    /// Renders Day Detail's own content — the map and Memory cards, no nav bar, no status
+    /// bar — as a standalone image, then saves it to Photos. This is the trimmed
+    /// alternative to the raw iOS screenshot the user just took, which always includes
+    /// system chrome the app has no way to remove.
+    ///
+    /// ImageRenderer.uiImage is synchronous: it reads the view tree at the instant it's
+    /// called. DaySnapshotContent's photo views are freshly constructed instances (not the
+    /// live screen's already-resolved ones), so their async PHAsset/PHImageManager fetch
+    /// hasn't completed yet if we render immediately — the snapshot would capture the
+    /// fallback icon, not the real photo. So cover photos are resolved to actual UIImages
+    /// first, then handed to the snapshot content already-loaded.
+    private func saveSnapshot(visits: [Visit]) {
+        saveState = .saving
+
+        Task {
+            let coverPhotosByVisitID = await loadCoverPhotos(for: visits)
+            let mapImage = await DayMap.renderStaticSnapshot(for: visits)
+
+            let renderer = ImageRenderer(content: DaySnapshotContent(day: day, visits: visits, coverPhotosByVisitID: coverPhotosByVisitID, mapImage: mapImage))
+            renderer.scale = UIScreen.main.scale
+
+            guard let image = renderer.uiImage else {
+                saveState = .failed
+                return
+            }
+
+            do {
+                try await DaySnapshotSaver.save(image)
+                saveState = .saved
+                try? await Task.sleep(for: .seconds(2))
+                withAnimation { isShowingSavePrompt = false }
+            } catch {
+                saveState = .failed
+            }
+        }
+    }
+
+    private func loadCoverPhotos(for visits: [Visit]) async -> [UUID: UIImage] {
+        var result: [UUID: UIImage] = [:]
+        let photoRepository = VisitPhotoRepository(modelContext: modelContext)
+        for visit in visits {
+            guard let identifier = photoRepository.fetchPhotos(for: visit).first?.localAssetIdentifier else { continue }
+            if let image = await PhotoAssetLoader.loadImage(for: identifier) {
+                result[visit.id] = image
+            }
+        }
+        return result
+    }
+}
+
+private enum DaySaveState {
+    case idle
+    case saving
+    case saved
+    case failed
+}
+
+private struct DaySavePrompt: View {
+    let state: DaySaveState
+    let onSave: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            switch state {
+            case .idle:
+                Button(action: onSave) {
+                    Label("Save", systemImage: "photo.badge.arrow.down.fill")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderedProminent)
+            case .saving:
+                ProgressView()
+                Text("Saving…")
+                    .font(.subheadline)
+            case .saved:
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Text("Saved to Photos")
+                    .font(.subheadline)
+            case .failed:
+                Image(systemName: "exclamationmark.circle.fill")
+                    .foregroundStyle(.red)
+                Text("Couldn't save")
+                    .font(.subheadline)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(.regularMaterial, in: Capsule())
+        .shadow(radius: 4)
+    }
+}
+
+/// The trimmed content rendered to an image on Save — same map and cards as the live
+/// screen, without NavigationStack chrome (title bar, Done button) or the system status
+/// bar, neither of which ImageRenderer captures since it renders this view tree in
+/// isolation rather than the screen.
+private struct DaySnapshotContent: View {
+    let day: Date
+    let visits: [Visit]
+    let coverPhotosByVisitID: [UUID: UIImage]
+    let mapImage: UIImage?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(day.formatted(.dateTime.month(.wide).day().year()))
+                .font(.title2.weight(.semibold))
+
+            if let mapImage {
+                Image(uiImage: mapImage)
+                    .resizable()
+                    .frame(height: 180)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+
+            ForEach(visits) { visit in
+                MemoryCard(visit: visit, preloadedCoverPhoto: coverPhotosByVisitID[visit.id])
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .frame(width: UIScreen.main.bounds.width)
+    }
+}
+
+/// Spatial summary of one day's Memories — DATA_MODEL.md §19.4 Daily Travel Log ("render
+/// map, Photos, Emotions, and Notes"). Deliberately shows independent pins with no
+/// connecting route: PlacePick only knows where Photos were taken, not how the user
+/// traveled between them, and a drawn route would assert a journey the data can't support
+/// (e.g. missed/unimported photos would silently produce a wrong or incomplete path).
+private struct DayMap: View {
+    let visits: [Visit]
+    @Binding var selectedVisit: Visit?
+
+    @State private var cameraPosition: MapCameraPosition = .automatic
+
+    private var visitsWithPlace: [Visit] {
+        visits.filter { $0.place != nil }
+    }
+
+    var body: some View {
+        if !visitsWithPlace.isEmpty {
+            Map(position: $cameraPosition) {
+                ForEach(visitsWithPlace) { visit in
+                    Annotation(visit.place!.name, coordinate: visit.place!.coordinate) {
+                        Button {
+                            selectedVisit = visit
+                        } label: {
+                            DayMapPin(visit: visit)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .frame(height: 180)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .onAppear { cameraPosition = .region(Self.fittedRegion(for: visitsWithPlace)) }
+        }
+    }
+
+    /// Shared by the live interactive map and the static Save-snapshot renderer, so both
+    /// always frame the day's Visits identically.
+    fileprivate static func fittedRegion(for visitsWithPlace: [Visit]) -> MKCoordinateRegion {
+        let coordinates = visitsWithPlace.map { $0.place!.coordinate }
+        guard let first = coordinates.first else {
+            return MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 0, longitude: 0), span: MKCoordinateSpan(latitudeDelta: 1, longitudeDelta: 1))
+        }
+
+        if coordinates.count == 1 {
+            return MKCoordinateRegion(center: first, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
+        }
+
+        var minLatitude = first.latitude, maxLatitude = first.latitude
+        var minLongitude = first.longitude, maxLongitude = first.longitude
+        for coordinate in coordinates {
+            minLatitude = min(minLatitude, coordinate.latitude)
+            maxLatitude = max(maxLatitude, coordinate.latitude)
+            minLongitude = min(minLongitude, coordinate.longitude)
+            maxLongitude = max(maxLongitude, coordinate.longitude)
+        }
+
+        let center = CLLocationCoordinate2D(
+            latitude: (minLatitude + maxLatitude) / 2,
+            longitude: (minLongitude + maxLongitude) / 2
+        )
+        let span = MKCoordinateSpan(
+            latitudeDelta: max((maxLatitude - minLatitude) * 1.6, 0.01),
+            longitudeDelta: max((maxLongitude - minLongitude) * 1.6, 0.01)
+        )
+        return MKCoordinateRegion(center: center, span: span)
+    }
+
+    /// Static counterpart to the live map, for use in ImageRenderer snapshots — see
+    /// DayDetailScreen.saveSnapshot. MKMapSnapshotter renders asynchronously ahead of time
+    /// instead of relying on a live Map view being ready at the instant ImageRenderer reads
+    /// the view tree.
+    static func renderStaticSnapshot(for visits: [Visit]) async -> UIImage? {
+        let visitsWithPlace = visits.filter { $0.place != nil }
+        guard !visitsWithPlace.isEmpty else { return nil }
+
+        let region = fittedRegion(for: visitsWithPlace)
+        let pins = visitsWithPlace.map {
+            DayMapSnapshotRenderer.Pin(coordinate: $0.place!.coordinate, symbolName: $0.place?.displayIcon ?? "mappin.circle")
+        }
+        let width = UIScreen.main.bounds.width - 32 // matches DaySnapshotContent's .padding()
+        return await DayMapSnapshotRenderer.renderSnapshot(region: region, pins: pins, size: CGSize(width: width, height: 180))
+    }
+}
+
+private struct DayMapPin: View {
+    let visit: Visit
+
+    var body: some View {
+        Image(systemName: visit.place?.displayIcon ?? "mappin.circle")
+            .font(.system(size: 12))
+            .foregroundStyle(.white)
+            .padding(6)
+            .background(Circle().fill(Color.accentColor))
     }
 }
 
@@ -47,6 +288,10 @@ struct DayDetailScreen: View {
 /// Day Detail and (eventually) other Memory-listing surfaces.
 struct MemoryCard: View {
     let visit: Visit
+    /// When set, used instead of PhotoAssetThumbnailView's own async load — needed for
+    /// ImageRenderer snapshots, which read the view tree synchronously and can't wait on
+    /// an async PHAsset fetch. See DayDetailScreen.saveSnapshot.
+    var preloadedCoverPhoto: UIImage? = nil
 
     @Environment(\.modelContext) private var modelContext
 
@@ -56,11 +301,20 @@ struct MemoryCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            PhotoAssetThumbnailView(localAssetIdentifier: coverPhotoIdentifier, fallbackIcon: visit.place.collection.icon)
-                .frame(height: 180)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+            if let preloadedCoverPhoto {
+                Image(uiImage: preloadedCoverPhoto)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 180)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                PhotoAssetThumbnailView(localAssetIdentifier: coverPhotoIdentifier, fallbackIcon: visit.place?.displayIcon ?? "mappin.circle")
+                    .frame(height: 180)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
 
-            Text(visit.place.name)
+            Text(visit.place?.name ?? "")
                 .font(.headline)
                 .foregroundStyle(.primary)
 

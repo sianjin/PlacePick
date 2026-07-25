@@ -5,19 +5,27 @@ import SwiftData
 /// §5: "The same Place may have different Emotions across different Visits."
 @Model
 final class Place {
-    @Attribute(.unique) var id: UUID
+    var id: UUID = UUID()
 
     var appleMapIdentifier: String?
-    var name: String
-    var latitude: Double
-    var longitude: Double
+    var name: String = ""
+    var latitude: Double = 0
+    var longitude: Double = 0
 
-    var collection: PlaceCollection
-    var isFavorite: Bool
+    /// Optional only for CloudKit sync compatibility (SwiftData requires every
+    /// relationship to be optional) — a Place without a Collection is not a valid app
+    /// state; every call site still treats this as required and must resolve it.
+    var collection: PlaceCollection?
+    var isFavorite: Bool = false
 
-    var createdAt: Date
-    var modifiedAt: Date
+    var createdAt: Date = Date.now
+    var modifiedAt: Date = Date.now
     var deletedAt: Date?
+
+    /// Inverse of Visit.place — required by CloudKit ("all relationships must have an
+    /// inverse"). Application code queries Visits by Place via VisitRepository, not
+    /// through this array.
+    @Relationship(inverse: \Visit.place) var visits: [Visit]? = []
 
     init(
         id: UUID = UUID(),
@@ -54,5 +62,12 @@ extension Place {
             latitude: latitude,
             longitude: longitude
         )
+    }
+
+    /// Every Place has a Collection in normal app usage; `collection` is only Optional
+    /// for CloudKit's relationship requirement. This is the display fallback for the rare
+    /// transient-sync-nil case, never expected to be seen in practice.
+    var displayIcon: String {
+        collection?.icon ?? "mappin.circle"
     }
 }

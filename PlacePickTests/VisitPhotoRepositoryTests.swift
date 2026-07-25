@@ -123,4 +123,33 @@ struct VisitPhotoRepositoryTests {
 
         #expect(inserted.first?.sortOrder == 1)
     }
+
+    @Test func softDeleteExcludesPhotoFromFetchPhotos() throws {
+        let context = try makeContext()
+        let repository = VisitPhotoRepository(modelContext: context)
+        let visit = makeVisit(context: context)
+        let photo = VisitPhoto(visit: visit, storedImageReference: "a", capturedAt: .now)
+        context.insert(photo)
+        try context.save()
+
+        repository.softDelete(photo)
+
+        #expect(repository.fetchPhotos(for: visit).isEmpty)
+        #expect(photo.deletedAt != nil)
+    }
+
+    @Test func softDeleteLeavesOtherPhotosOnTheVisitIntact() throws {
+        let context = try makeContext()
+        let repository = VisitPhotoRepository(modelContext: context)
+        let visit = makeVisit(context: context)
+        let toDelete = VisitPhoto(visit: visit, storedImageReference: "a", capturedAt: .now, sortOrder: 0)
+        let toKeep = VisitPhoto(visit: visit, storedImageReference: "b", capturedAt: .now, sortOrder: 1)
+        context.insert(toDelete)
+        context.insert(toKeep)
+        try context.save()
+
+        repository.softDelete(toDelete)
+
+        #expect(repository.fetchPhotos(for: visit).map(\.storedImageReference) == ["b"])
+    }
 }

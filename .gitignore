@@ -21,3 +21,10 @@ PlacePickShareExtension/Info.plist
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+# Code signing artifacts (regenerate via `fastlane sigh`, never commit)
+*.mobileprovision
+
+# fastlane build/test artifacts (not source)
+fastlane/report.xml
+fastlane/test_output/

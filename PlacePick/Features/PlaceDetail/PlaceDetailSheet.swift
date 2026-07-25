@@ -9,87 +9,27 @@ struct PlaceDetailSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    @State private var visit: Visit?
-    @State private var isEditingNote = false
-    @State private var noteDraft = ""
+    @State private var visits: [Visit] = []
     @State private var isPresentingCollectionPicker = false
     @State private var isPresentingReplacePlace = false
     @State private var isPresentingDeleteConfirmation = false
     @State private var isPresentingOpenExternally = false
-    @State private var isPresentingMemoryDetail = false
-    @State private var isPresentingAddPhoto = false
+    @State private var selectedMemory: Visit?
+    @State private var isPresentingAddMemory = false
     @State private var existingTargetPlace: Place?
 
     private var visitRepository: VisitRepository {
         VisitRepository(modelContext: modelContext)
     }
 
-    private var coverPhoto: VisitPhoto? {
-        guard let visit else { return nil }
-        return VisitPhotoRepository(modelContext: modelContext).fetchPhotos(for: visit).first
-    }
-
-    /// Lazily creates the Place's single Visit on first edit, per the compatibility shim
-    /// described in VisitRepository — avoids creating an empty Visit just from viewing.
-    private func activeVisit() -> Visit {
-        if let visit { return visit }
-        let created = visitRepository.findOrCreateActiveVisit(for: place)
-        visit = created
-        return created
-    }
-
-    private var currentEmotion: PlaceEmotion? {
-        visit?.emotion
-    }
-
-    private var currentNote: String {
-        visit?.note ?? ""
+    private func reloadVisits() {
+        visits = visitRepository.fetchVisits(for: place)
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    if let visit, let coverPhoto {
-                        Button {
-                            isPresentingMemoryDetail = true
-                        } label: {
-                            PhotoAssetThumbnailView(localAssetIdentifier: coverPhoto.localAssetIdentifier, fallbackIcon: place.collection.icon)
-                                .frame(height: 160)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        .buttonStyle(.plain)
-                        .sheet(isPresented: $isPresentingMemoryDetail) {
-                            MemoryDetailScreen(visit: visit)
-                        }
-                    } else {
-                        Button {
-                            isPresentingAddPhoto = true
-                        } label: {
-                            VStack(spacing: 6) {
-                                Image(systemName: "photo.badge.plus")
-                                    .font(.title2)
-                                Text("Add Photo")
-                                    .font(.subheadline)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 100)
-                            .foregroundStyle(Color.accentColor)
-                            .background(Color.accentColor.opacity(0.08))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .strokeBorder(Color.accentColor.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [5]))
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .sheet(isPresented: $isPresentingAddPhoto) {
-                            AddPhotoToPlaceSheet(place: place) { savedVisit in
-                                visit = savedVisit
-                            }
-                        }
-                    }
-
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(place.name)
@@ -98,7 +38,7 @@ struct PlaceDetailSheet: View {
                             Button {
                                 isPresentingCollectionPicker = true
                             } label: {
-                                Label(place.collection.name, systemImage: place.collection.icon)
+                                Label(place.collection?.name ?? "", systemImage: place.displayIcon)
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }
@@ -119,16 +59,6 @@ struct PlaceDetailSheet: View {
                         }
                         .buttonStyle(.plain)
 
-                        EmotionPicker(emotion: Binding(
-                            get: { currentEmotion },
-                            set: { newValue in
-                                let visit = activeVisit()
-                                visit.emotion = newValue
-                                visit.modifiedAt = .now
-                                visitRepository.save()
-                            }
-                        ))
-
                         Spacer()
 
                         Button {
@@ -141,21 +71,7 @@ struct PlaceDetailSheet: View {
                         .buttonStyle(.plain)
                     }
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Note")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Button {
-                            noteDraft = currentNote
-                            isEditingNote = true
-                        } label: {
-                            Text(currentNote.isEmpty ? "Add a note" : currentNote)
-                                .foregroundStyle(currentNote.isEmpty ? .secondary : .primary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    memoriesSection
                 }
                 .padding()
             }
@@ -165,7 +81,7 @@ struct PlaceDetailSheet: View {
                     Menu {
                         ShareLink(
                             item: TransferablePlaceIdentity(identity: place.sharedIdentity),
-                            preview: SharePreview(place.name, image: sharePreviewBadgeImage(icon: place.collection.icon))
+                            preview: SharePreview(place.name, image: sharePreviewBadgeImage(icon: place.displayIcon))
                         ) {
                             Label("Share Place", systemImage: "square.and.arrow.up")
                         }
@@ -175,13 +91,13 @@ struct PlaceDetailSheet: View {
                     }
                 }
             }
-            .sheet(isPresented: $isEditingNote) {
-                NoteEditor(text: $noteDraft) {
-                    let visit = activeVisit()
-                    visit.note = noteDraft
-                    visit.modifiedAt = .now
-                    visitRepository.save()
-                    isEditingNote = false
+            .sheet(item: $selectedMemory) { memory in
+                MemoryDetailScreen(visit: memory)
+                    .onDisappear { reloadVisits() }
+            }
+            .sheet(isPresented: $isPresentingAddMemory) {
+                AddPhotoToPlaceSheet(place: place) { _ in
+                    reloadVisits()
                 }
             }
             .sheet(isPresented: $isPresentingCollectionPicker) {
@@ -227,7 +143,62 @@ struct PlaceDetailSheet: View {
             }
         }
         .onAppear {
-            visit = visitRepository.findActiveVisit(for: place)
+            reloadVisits()
+        }
+    }
+
+    /// DATA_MODEL.md §20 Place Detail Projection — a Place renders its full list of
+    /// Memories (Visits), each with its own photo, emotion, and note, plus a repeatable
+    /// Add Memory action. Replaces the earlier single-Visit cover-photo block.
+    @ViewBuilder
+    private var memoriesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Memories")
+                    .font(.headline)
+                Spacer()
+                Button {
+                    isPresentingAddMemory = true
+                } label: {
+                    Label("Add Memory", systemImage: "plus.circle.fill")
+                        .font(.subheadline)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if visits.isEmpty {
+                Button {
+                    isPresentingAddMemory = true
+                } label: {
+                    VStack(spacing: 6) {
+                        Image(systemName: "photo.badge.plus")
+                            .font(.title2)
+                        Text("Add your first Memory")
+                            .font(.subheadline)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 100)
+                    .foregroundStyle(Color.accentColor)
+                    .background(Color.accentColor.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(Color.accentColor.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [5]))
+                    )
+                }
+                .buttonStyle(.plain)
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(visits) { visit in
+                        Button {
+                            selectedMemory = visit
+                        } label: {
+                            MemoryRow(visit: visit, fallbackIcon: place.displayIcon)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
         }
     }
 
@@ -245,25 +216,45 @@ struct PlaceDetailSheet: View {
     }
 }
 
-private struct NoteEditor: View {
-    @Binding var text: String
-    let onSave: () -> Void
-    @Environment(\.dismiss) private var dismiss
+private struct MemoryRow: View {
+    let visit: Visit
+    let fallbackIcon: String
+
+    @Environment(\.modelContext) private var modelContext
+
+    private var coverPhoto: VisitPhoto? {
+        VisitPhotoRepository(modelContext: modelContext).fetchPhotos(for: visit).first
+    }
 
     var body: some View {
-        NavigationStack {
-            TextEditor(text: $text)
-                .padding()
-                .navigationTitle("Note")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { dismiss() }
+        HStack(spacing: 12) {
+            PhotoAssetThumbnailView(localAssetIdentifier: coverPhoto?.localAssetIdentifier, fallbackIcon: fallbackIcon)
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(visit.startedAt, format: .dateTime.month(.abbreviated).day().year())
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.primary)
+
+                HStack(spacing: 4) {
+                    if let emotion = visit.emotion {
+                        Text(emotion.symbolEmoji)
                     }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save", action: onSave)
+                    if !visit.note.isEmpty {
+                        Text(visit.note)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                 }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
     }
 }

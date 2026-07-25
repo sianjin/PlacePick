@@ -9,7 +9,7 @@ enum CollectionSnapshotBuilder {
     static func makeSnapshot(for collection: PlaceCollection, modelContext: ModelContext) -> SharedCollectionSnapshot {
         let collectionID = collection.id
         let descriptor = FetchDescriptor<Place>(
-            predicate: #Predicate { $0.collection.id == collectionID && $0.deletedAt == nil }
+            predicate: #Predicate { $0.collection?.id == collectionID && $0.deletedAt == nil }
         )
         let places = (try? modelContext.fetch(descriptor)) ?? []
 

@@ -12,7 +12,7 @@ final class VisitPhotoRepository {
     func fetchPhotos(for visit: Visit) -> [VisitPhoto] {
         let visitID = visit.id
         let descriptor = FetchDescriptor<VisitPhoto>(
-            predicate: #Predicate { $0.visit.id == visitID && $0.deletedAt == nil },
+            predicate: #Predicate { $0.visit?.id == visitID && $0.deletedAt == nil },
             sortBy: [SortDescriptor(\.sortOrder)]
         )
         return (try? modelContext.fetch(descriptor)) ?? []
@@ -50,5 +50,14 @@ final class VisitPhotoRepository {
 
         try? modelContext.save()
         return inserted
+    }
+
+    /// Removes one Photo from its Visit — DATA_MODEL.md §22.3. Callers must decide what to
+    /// do when this is the Visit's last active Photo (an active Visit cannot persist with
+    /// zero Photos); this method does not enforce that itself.
+    func softDelete(_ photo: VisitPhoto) {
+        photo.deletedAt = .now
+        photo.modifiedAt = .now
+        try? modelContext.save()
     }
 }

@@ -2,10 +2,13 @@ import SwiftUI
 import PhotosUI
 import SwiftData
 
-/// Adds photos directly to a known Place's Visit — no clustering or Place confirmation,
-/// since the Place is already fixed by where the user tapped Add Photo from. This is a
+/// Adds photos to a known Place as a new Memory — no clustering or Place confirmation,
+/// since the Place is already fixed by where the user tapped Add Memory from. This is a
 /// separate, simpler entry point than PhotoMemoryScreen's multi-group flow (MEMORY_CREATION.md
 /// Stage 1–5), which exists for the "I don't know which photos go where yet" case.
+///
+/// Always creates a fresh Visit (DATA_MODEL.md §20 — a Place may have many Memories, and
+/// Add Memory must be repeatable), never reuses an existing one.
 struct AddPhotoToPlaceSheet: View {
     let place: Place
     let onSaved: (Visit) -> Void
@@ -32,9 +35,9 @@ struct AddPhotoToPlaceSheet: View {
                     )
                 } else {
                     ContentUnavailableView(
-                        "Add a Photo",
+                        "Add a Memory",
                         systemImage: "photo.on.rectangle.angled",
-                        description: Text("Choose photos to attach to \(place.name).")
+                        description: Text("Choose photos for a new memory at \(place.name).")
                     )
                 }
 
@@ -54,7 +57,7 @@ struct AddPhotoToPlaceSheet: View {
 
                 Spacer()
             }
-            .navigationTitle("Add Photo")
+            .navigationTitle("Add Memory")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -103,8 +106,8 @@ struct AddPhotoToPlaceSheet: View {
             return
         }
 
-        let visitRepository = VisitRepository(modelContext: modelContext)
-        let visit = visitRepository.findOrCreateActiveVisit(for: place)
+        let visit = Visit(place: place)
+        modelContext.insert(visit)
         VisitPhotoRepository(modelContext: modelContext).attach(candidates, to: visit)
 
         onSaved(visit)

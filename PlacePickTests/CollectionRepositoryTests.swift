@@ -50,7 +50,7 @@ struct CollectionRepositoryTests {
         let place = Place(appleMapIdentifier: "id", name: "Place", latitude: 0, longitude: 0, collection: collection)
         context.insert(place)
 
-        #expect(place.collection.id == collection.id)
+        #expect(place.collection?.id == collection.id)
     }
 
     @Test func emptyCollectionCanBeDeletedDirectly() throws {
@@ -85,7 +85,7 @@ struct CollectionRepositoryTests {
 
         try repository.delete(source, reassigningTo: destination)
 
-        #expect(place.collection.id == destination.id)
+        #expect(place.collection?.id == destination.id)
         #expect(!repository.fetchAllOrdered().map(\.id).contains(source.id))
     }
 }

@@ -5,18 +5,21 @@ import SwiftData
 /// nothing creates or displays VisitPhotos yet; Photo-first import is a later step.
 @Model
 final class VisitPhoto {
-    @Attribute(.unique) var id: UUID
+    var id: UUID = UUID()
 
-    var visit: Visit
+    /// Optional only for CloudKit sync compatibility (SwiftData requires every
+    /// relationship to be optional) — a VisitPhoto without a Visit is not a valid app
+    /// state; every call site still treats this as required and must resolve it.
+    var visit: Visit?
     var localAssetIdentifier: String?
-    var storedImageReference: String
-    var capturedAt: Date
+    var storedImageReference: String = ""
+    var capturedAt: Date = Date.now
     var latitude: Double?
     var longitude: Double?
-    var sortOrder: Int
+    var sortOrder: Int = 0
 
-    var createdAt: Date
-    var modifiedAt: Date
+    var createdAt: Date = Date.now
+    var modifiedAt: Date = Date.now
     var deletedAt: Date?
 
     init(

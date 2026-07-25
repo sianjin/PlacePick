@@ -11,7 +11,6 @@ struct PhotoAssetThumbnailView: View {
     let fallbackIcon: String
 
     @State private var thumbnail: UIImage?
-    @State private var didAttemptLoad = false
 
     var body: some View {
         ZStack {
@@ -28,47 +27,17 @@ struct PhotoAssetThumbnailView: View {
         }
         .clipped()
         .task(id: localAssetIdentifier) {
-            guard !didAttemptLoad else { return }
-            didAttemptLoad = true
             await load()
         }
     }
 
+    /// Re-runs on every localAssetIdentifier change (a view instance can be reused for a
+    /// different photo — e.g. a Place Detail row after its cover photo is deleted), so the
+    /// stale thumbnail must be cleared up front rather than left showing until the new one
+    /// resolves.
     private func load() async {
+        thumbnail = nil
         guard let localAssetIdentifier else { return }
-
-        if let cached = PhotoThumbnailCache.shared.image(for: localAssetIdentifier) {
-            thumbnail = cached
-            return
-        }
-
-        let assets = PHAsset.fetchAssets(withLocalIdentifiers: [localAssetIdentifier], options: nil)
-        guard let asset = assets.firstObject else { return }
-
-        if let image = await Self.requestImage(for: asset) {
-            PhotoThumbnailCache.shared.store(image, for: localAssetIdentifier)
-            thumbnail = image
-        }
-    }
-
-    private static func requestImage(for asset: PHAsset) async -> UIImage? {
-        await withCheckedContinuation { continuation in
-            let options = PHImageRequestOptions()
-            options.isNetworkAccessAllowed = true
-            // .opportunistic can invoke the result handler twice (low-quality preview,
-            // then final image); a checked continuation may only resume once, so request
-            // the single high-quality delivery instead.
-            options.deliveryMode = .highQualityFormat
-            options.isSynchronous = false
-
-            PHImageManager.default().requestImage(
-                for: asset,
-                targetSize: CGSize(width: 600, height: 600),
-                contentMode: .aspectFill,
-                options: options
-            ) { image, _ in
-                continuation.resume(returning: image)
-            }
-        }
+        thumbnail = await PhotoAssetLoader.loadImage(for: localAssetIdentifier)
     }
 }

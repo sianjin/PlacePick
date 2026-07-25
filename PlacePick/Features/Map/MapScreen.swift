@@ -29,26 +29,23 @@ struct MapScreen: View {
     private var visiblePlaces: [Place] {
         let active = places.filter { $0.deletedAt == nil }
         guard let selectedCollection else { return active }
-        return active.filter { $0.collection.id == selectedCollection.id }
+        return active.filter { $0.collection?.id == selectedCollection.id }
     }
 
-    /// One lookup per body evaluation rather than a fetch per marker. Compatibility shim:
-    /// at most one active Visit per Place — see VisitRepository.
-    private var activeVisitsByPlaceID: [UUID: Visit] {
-        Dictionary(
-            visits.filter { $0.deletedAt == nil }.map { ($0.place.id, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
+    /// One lookup per body evaluation rather than a fetch per marker. A Place may have
+    /// many Visits (DATA_MODEL.md §3.2) — RecommendationEngine picks the relevant one.
+    private var visitsByPlaceID: [UUID: [Visit]] {
+        Dictionary(grouping: visits.filter { $0.deletedAt == nil && $0.place != nil }, by: { $0.place!.id })
     }
 
     var body: some View {
         ZStack(alignment: .top) {
             Map(position: $cameraPosition, selection: $selectedPlace) {
-                let visitsByPlaceID = activeVisitsByPlaceID
+                let visitsByPlaceID = visitsByPlaceID
                 ForEach(visiblePlaces) { place in
                     let importance = recommendationEngine.importance(
                         for: place,
-                        activeVisit: visitsByPlaceID[place.id],
+                        visits: visitsByPlaceID[place.id] ?? [],
                         now: .now
                     )
                     Annotation(
@@ -227,7 +224,7 @@ private struct PlaceMapMarker: View {
     }
 
     var body: some View {
-        Image(systemName: place.collection.icon)
+        Image(systemName: place.displayIcon)
             .font(.system(size: 16))
             .foregroundStyle(.white)
             .padding(8)

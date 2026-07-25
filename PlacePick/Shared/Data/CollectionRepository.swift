@@ -60,7 +60,7 @@ final class CollectionRepository {
     func placeCount(for collection: PlaceCollection) -> Int {
         let collectionID = collection.id
         let descriptor = FetchDescriptor<Place>(
-            predicate: #Predicate { $0.collection.id == collectionID && $0.deletedAt == nil }
+            predicate: #Predicate { $0.collection?.id == collectionID && $0.deletedAt == nil }
         )
         return (try? modelContext.fetchCount(descriptor)) ?? 0
     }
@@ -79,7 +79,7 @@ final class CollectionRepository {
 
             let collectionID = collection.id
             let descriptor = FetchDescriptor<Place>(
-                predicate: #Predicate { $0.collection.id == collectionID && $0.deletedAt == nil }
+                predicate: #Predicate { $0.collection?.id == collectionID && $0.deletedAt == nil }
             )
             let affectedPlaces = (try? modelContext.fetch(descriptor)) ?? []
             for place in affectedPlaces {

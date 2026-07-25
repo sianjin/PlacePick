@@ -35,7 +35,7 @@ struct VisitRepositoryTests {
 
         let result = repository.fetchVisits(on: targetDay)
 
-        #expect(result.map(\.place.name) == ["Blue Bottle", "Ferry Building"])
+        #expect(result.map(\.place?.name) == ["Blue Bottle", "Ferry Building"])
     }
 
     @Test func fetchVisitsOnDayExcludesSoftDeletedVisits() throws {
@@ -63,7 +63,7 @@ struct VisitRepositoryTests {
 
         let result = repository.fetchVisits(on: day)
 
-        #expect(result.map(\.place.name) == ["Blue Bottle", "Nopa"])
+        #expect(result.map(\.place?.name) == ["Blue Bottle", "Nopa"])
     }
 
     @Test func multipleVisitsToSamePlaceRemainSeparate() throws {
@@ -88,5 +88,78 @@ struct VisitRepositoryTests {
         let second = repository.findOrCreateActiveVisit(for: place)
 
         #expect(first.id == second.id)
+    }
+
+    @Test func fetchVisitsForPlaceReturnsAllOfThemMostRecentFirst() throws {
+        let context = try makeContext()
+        let repository = VisitRepository(modelContext: context)
+        let place = makePlace(context: context, name: "Blue Bottle")
+        let earlier = Date(timeIntervalSince1970: 1_000_000_000)
+        let later = Date(timeIntervalSince1970: 1_000_100_000)
+
+        context.insert(Visit(place: place, startedAt: earlier))
+        context.insert(Visit(place: place, startedAt: later))
+        try context.save()
+
+        let result = repository.fetchVisits(for: place)
+
+        #expect(result.map(\.startedAt) == [later, earlier])
+    }
+
+    @Test func fetchVisitsForPlaceExcludesOtherPlacesAndSoftDeleted() throws {
+        let context = try makeContext()
+        let repository = VisitRepository(modelContext: context)
+        let place = makePlace(context: context, name: "Blue Bottle")
+        let otherPlace = makePlace(context: context, name: "Nopa")
+
+        context.insert(Visit(place: place, startedAt: .now))
+        context.insert(Visit(place: place, startedAt: .now, deletedAt: .now))
+        context.insert(Visit(place: otherPlace, startedAt: .now))
+        try context.save()
+
+        #expect(repository.fetchVisits(for: place).count == 1)
+    }
+
+    @Test func softDeleteExcludesVisitFromFetchVisitsForPlace() throws {
+        let context = try makeContext()
+        let repository = VisitRepository(modelContext: context)
+        let place = makePlace(context: context)
+        let visit = Visit(place: place)
+        context.insert(visit)
+        try context.save()
+
+        repository.softDelete(visit)
+
+        #expect(repository.fetchVisits(for: place).isEmpty)
+        #expect(visit.deletedAt != nil)
+    }
+
+    @Test func softDeleteDoesNotAffectThePlace() throws {
+        let context = try makeContext()
+        let repository = VisitRepository(modelContext: context)
+        let place = makePlace(context: context)
+        let visit = Visit(place: place)
+        context.insert(visit)
+        try context.save()
+
+        repository.softDelete(visit)
+
+        #expect(place.deletedAt == nil)
+    }
+
+    @Test func softDeleteCascadesToVisitPhotos() throws {
+        let context = try makeContext()
+        let repository = VisitRepository(modelContext: context)
+        let photoRepository = VisitPhotoRepository(modelContext: context)
+        let place = makePlace(context: context)
+        let visit = Visit(place: place)
+        context.insert(visit)
+        context.insert(VisitPhoto(visit: visit, storedImageReference: "a", capturedAt: .now))
+        context.insert(VisitPhoto(visit: visit, storedImageReference: "b", capturedAt: .now))
+        try context.save()
+
+        repository.softDelete(visit)
+
+        #expect(photoRepository.fetchPhotos(for: visit).isEmpty)
     }
 }

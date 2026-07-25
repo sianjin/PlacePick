@@ -25,12 +25,21 @@ targets:
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "PlacePick reads photo dates and locations to help group your photos into Memories."
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_ENTITLEMENTS: PlacePick/PlacePick.entitlements
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 29U62PFQPQ
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          PROVISIONING_PROFILE_SPECIFIER: "com.sianjin.PlacePick AppStore"
     info:
       path: PlacePick/Info.plist
       properties:
         UILaunchScreen: {}
         NSLocationWhenInUseUsageDescription: "PlacePick uses your location to show where you are relative to the places you saved."
         NSPhotoLibraryUsageDescription: "PlacePick reads photo dates and locations to help group your photos into Memories."
+        UIBackgroundModes:
+          - remote-notification
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - placepick
@@ -70,6 +79,13 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_ENTITLEMENTS: PlacePickShareExtension/PlacePickShareExtension.entitlements
         SKIP_INSTALL: true
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 29U62PFQPQ
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          PROVISIONING_PROFILE_SPECIFIER: "com.sianjin.PlacePick.ShareExtension AppStore"
     info:
       path: PlacePickShareExtension/Info.plist
       properties:

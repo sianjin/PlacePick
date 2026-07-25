@@ -70,14 +70,14 @@ private struct NewCollectionQuickSheet: View {
                 }
 
                 Section("Icon") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 12) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 14) {
                         ForEach(CollectionIconChoices.all, id: \.self) { choice in
                             Button {
                                 icon = choice
                             } label: {
                                 Image(systemName: choice)
-                                    .font(.title3)
-                                    .frame(width: 36, height: 36)
+                                    .font(.title2)
+                                    .frame(width: 48, height: 48)
                                     .background(
                                         Circle().fill(icon == choice ? Color.accentColor : Color(.secondarySystemBackground))
                                     )

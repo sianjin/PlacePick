@@ -5,18 +5,27 @@ import Foundation
 /// so both stay in sync, per the "one responsibility per layer" / reuse principle.
 enum CollectionIconChoices {
     static let all = [
+        // Food & drink
         "fork.knife", "cup.and.saucer", "wineglass", "birthday.cake", "carrot",
-        "bag", "cart", "bed.double", "building.columns",
-        "beach.umbrella", "figure.hiking", "leaf", "tree", "mountain.2",
-        "figure.skiing.downhill", "figure.pool.swim", "sportscourt", "figure.run", "bicycle",
-        "camera", "music.note", "theatermasks", "ticket", "party.popper",
-        "pawprint", "heart", "star", "sparkles", "gift",
-        "airplane", "car", "train.side.front.car", "map", "flag",
-        "sun.max", "moon.stars", "snowflake", "drop", "flame",
-        "book", "gamecontroller", "guitars",
-        "cross.case", "stethoscope", "wrench.and.screwdriver", "scissors", "fuelpump",
-        "shower", "tent", "tree.circle", "fish", "bird",
-        "sailboat", "ferry", "cablecar", "tram", "bus",
-        "movieclapper", "popcorn", "surfboard"
+        "basket", "takeoutbag.and.cup.and.straw",
+        // Shopping & lodging
+        "bag", "cart", "bed.double",
+        // Places & city
+        "building.columns", "building.2", "road.lanes", "road.lanes.curved.right",
+        "graduationcap", "paintpalette",
+        // Nature & outdoors
+        "leaf", "tree", "mountain.2", "beach.umbrella", "tent", "fish", "pawprint",
+        // Activities (grouped by kind: hike/run/ski/swim/sport together)
+        "figure.hiking", "figure.run", "figure.skiing.downhill", "figure.pool.swim", "sportscourt", "bicycle",
+        // Transportation (grouped together)
+        "airplane", "train.side.front.car", "bus", "ferry", "fuelpump",
+        // Entertainment
+        "music.note", "theatermasks", "movieclapper", "popcorn", "gamecontroller", "gift", "book",
+        // Feelings & keepsakes
+        "heart", "star",
+        // Weather & navigation
+        "flag", "sun.max", "moon.stars",
+        // Services
+        "cross.case", "stethoscope", "wrench.and.screwdriver", "scissors"
     ]
 }

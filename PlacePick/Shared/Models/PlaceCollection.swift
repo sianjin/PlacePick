@@ -3,11 +3,16 @@ import SwiftData
 
 @Model
 final class PlaceCollection {
-    @Attribute(.unique) var id: UUID
+    var id: UUID = UUID()
 
-    var name: String
-    var icon: String
-    var order: Int
+    var name: String = ""
+    var icon: String = ""
+    var order: Int = 0
+
+    /// Inverse of Place.collection — required by CloudKit ("all relationships must have an
+    /// inverse"). Application code queries Places by Collection via #Predicate on Place
+    /// directly (see CollectionRepository), not through this array.
+    @Relationship(inverse: \Place.collection) var places: [Place]? = []
 
     init(
         id: UUID = UUID(),

@@ -11,7 +11,11 @@ enum NearbyPlaceSearchService {
     static func nearbyPlaces(around coordinate: CLLocationCoordinate2D) async -> [MKMapItem] {
         let request = MKLocalSearch.Request()
         request.region = MKCoordinateRegion(center: coordinate, latitudinalMeters: searchRadiusMeters, longitudinalMeters: searchRadiusMeters)
-        request.resultTypes = .pointOfInterest
+        // POI-only excludes any coordinate Apple Maps hasn't tagged as a formal point of
+        // interest — many real photo locations (trailheads, scenic spots, addresses,
+        // unlisted parks) have valid GPS but no POI listing, so they'd never get a
+        // suggestion even though Photos itself can show the location on a map.
+        request.resultTypes = [.pointOfInterest, .address]
 
         let search = MKLocalSearch(request: request)
         guard let response = try? await search.start() else { return [] }

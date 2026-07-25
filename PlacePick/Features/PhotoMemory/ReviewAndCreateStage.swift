@@ -64,19 +64,22 @@ struct ReviewAndCreateStage: View {
         .listStyle(.plain)
         .navigationTitle("Review")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    createMemories()
-                } label: {
-                    if isCreating {
-                        ProgressView()
-                    } else {
-                        Text("Create \(resolvedGroups.count) Memor\(resolvedGroups.count == 1 ? "y" : "ies")")
-                    }
+        .safeAreaInset(edge: .bottom) {
+            Button {
+                createMemories()
+            } label: {
+                if isCreating {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                } else {
+                    Text("Create")
+                        .frame(maxWidth: .infinity)
                 }
-                .disabled(isCreating || resolvedGroups.isEmpty || selectedCollection == nil)
             }
+            .buttonStyle(.borderedProminent)
+            .disabled(isCreating || resolvedGroups.isEmpty || selectedCollection == nil)
+            .padding()
+            .background(.bar)
         }
         .alert("Some Memories couldn't be saved", isPresented: .constant(errorMessage != nil), actions: {
             Button("OK") { errorMessage = nil }
