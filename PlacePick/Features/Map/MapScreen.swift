@@ -48,15 +48,13 @@ struct MapScreen: View {
                         visits: visitsByPlaceID[place.id] ?? [],
                         now: .now
                     )
-                    if MapLabelPresentation.shouldShowMarker(importance: importance, span: currentSpan) {
-                        Annotation(
-                            MapLabelPresentation.shouldShowLabel(importance: importance, span: currentSpan) ? place.name : "",
-                            coordinate: place.coordinate
-                        ) {
-                            PlaceMapMarker(place: place, importance: importance)
-                        }
-                        .tag(place)
+                    Annotation(
+                        MapLabelPresentation.shouldShowLabel(importance: importance, span: currentSpan) ? place.name : "",
+                        coordinate: place.coordinate
+                    ) {
+                        PlaceMapMarker(place: place, importance: importance)
                     }
+                    .tag(place)
                 }
                 UserAnnotation()
             }

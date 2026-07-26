@@ -32,20 +32,4 @@ enum MapLabelPresentation {
         let threshold = progress * wideZoomImportanceThreshold
         return importance.value >= threshold
     }
-
-    /// Above this span (region/state view), pins themselves start thinning out — see
-    /// RECOMMENDATION_MODEL.md "Zoom Adaptation": "at broad zoom levels: clustering is
-    /// preferred." Wider than fullDetailLatitudeDelta because hiding a pin is a much
-    /// stronger move than just hiding its label — every Place still has a visible pin at
-    /// neighborhood/city zoom, only very wide (multi-city/region) views start dropping
-    /// low-importance ones so the map doesn't become a wall of overlapping icons.
-    private static let markerThinningLatitudeDelta: Double = 0.3
-
-    /// Above this span, only the most important Places keep a pin at all.
-    private static let wideZoomMarkerImportanceThreshold: Double = 0.6
-
-    static func shouldShowMarker(importance: ImportanceScore, span: MKCoordinateSpan) -> Bool {
-        guard span.latitudeDelta > markerThinningLatitudeDelta else { return true }
-        return importance.value >= wideZoomMarkerImportanceThreshold
-    }
 }
