@@ -21,19 +21,26 @@ struct ReviewGroupsStage: View {
     @State private var isMergeTargetPickerPresented = false
     @State private var suggestionsByGroupID: [UUID: [MKMapItem]] = [:]
     @State private var isSearchingGroupID: UUID?
-    @State private var searchTarget: SearchTarget?
-    @State private var collectionPickerGroupID: UUID?
+    @State private var activeSheet: ActiveSheet?
     @State private var draggingPhotoID: String?
     @State private var justResolvedGroupID: UUID?
 
-    private struct SearchTarget: Identifiable {
-        let groupID: UUID
-        var id: UUID { groupID }
-    }
+    /// Place search and Collection picking are two different sheets that can both be
+    /// triggered from the same group row. Two independent `.sheet(item:)` modifiers on one
+    /// view is a known SwiftUI footgun — presentation/dismissal timing between them isn't
+    /// reliable, which was causing the Collection sheet to auto-open right after a place
+    /// was resolved via the search sheet. A single sheet with one Identifiable enum removes
+    /// the ambiguity entirely.
+    private enum ActiveSheet: Identifiable {
+        case search(groupID: UUID)
+        case collection(groupID: UUID)
 
-    private struct GroupPickerTarget: Identifiable {
-        let groupID: UUID
-        var id: UUID { groupID }
+        var id: String {
+            switch self {
+            case .search(let groupID): "search-\(groupID)"
+            case .collection(let groupID): "collection-\(groupID)"
+            }
+        }
     }
 
     private var resolvableGroups: [PhotoImportGroup] {
@@ -102,25 +109,24 @@ struct ReviewGroupsStage: View {
             }
             Button("Cancel", role: .cancel) { mergeSourceGroupID = nil }
         }
-        .sheet(item: $searchTarget) { target in
-            ManualPlaceSearchSheet(
-                nearbyCoordinate: draft.proposedGroups.first(where: { $0.id == target.groupID })?.approximateCoordinate,
-                nearbySuggestions: suggestionsByGroupID[target.groupID] ?? []
-            ) { mapItem in
-                resolve(groupID: target.groupID, with: mapItem)
-            }
-        }
-        .sheet(item: Binding(
-            get: { collectionPickerGroupID.map { GroupPickerTarget(groupID: $0) } },
-            set: { collectionPickerGroupID = $0?.groupID }
-        )) { target in
-            CollectionPickerSheet(selection: Binding(
-                get: { draft.proposedGroups.first(where: { $0.id == target.groupID })?.collection },
-                set: { newValue in
-                    guard let index = draft.proposedGroups.firstIndex(where: { $0.id == target.groupID }) else { return }
-                    draft.proposedGroups[index].collection = newValue
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .search(let groupID):
+                ManualPlaceSearchSheet(
+                    nearbyCoordinate: draft.proposedGroups.first(where: { $0.id == groupID })?.approximateCoordinate,
+                    nearbySuggestions: suggestionsByGroupID[groupID] ?? []
+                ) { mapItem in
+                    resolve(groupID: groupID, with: mapItem)
                 }
-            ))
+            case .collection(let groupID):
+                CollectionPickerSheet(selection: Binding(
+                    get: { draft.proposedGroups.first(where: { $0.id == groupID })?.collection },
+                    set: { newValue in
+                        guard let index = draft.proposedGroups.firstIndex(where: { $0.id == groupID }) else { return }
+                        draft.proposedGroups[index].collection = newValue
+                    }
+                ))
+            }
         }
         .onAppear {
             guard let firstCollection = collections.first else { return }
@@ -218,13 +224,13 @@ struct ReviewGroupsStage: View {
                     Label(mapItem.name ?? "Unnamed Place", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.primary)
                     Spacer()
-                    Button("Change") { searchTarget = SearchTarget(groupID: group.id) }
+                    Button("Change") { activeSheet = .search(groupID: group.id) }
                         .font(.subheadline)
                 }
 
                 Button {
                     guard justResolvedGroupID != group.id else { return }
-                    collectionPickerGroupID = group.id
+                    activeSheet = .collection(groupID: group.id)
                 } label: {
                     if let collection = group.collection {
                         Label(collection.name, systemImage: collection.icon)
@@ -262,7 +268,7 @@ struct ReviewGroupsStage: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Button("Search for a Place") { searchTarget = SearchTarget(groupID: group.id) }
+                Button("Search for a Place") { activeSheet = .search(groupID: group.id) }
                     .font(.subheadline)
             }
 
@@ -356,7 +362,7 @@ struct ReviewGroupsStage: View {
     private func resolve(groupID: UUID, with mapItem: MKMapItem) {
         guard let index = draft.proposedGroups.firstIndex(where: { $0.id == groupID }) else { return }
         draft.proposedGroups[index].status = .resolved(mapItem)
-        searchTarget = nil
+        activeSheet = nil
 
         // Guards against a stray tap immediately opening the Collection picker the instant
         // it appears in the newly-resolved row, right under where the finger just tapped
@@ -386,6 +392,7 @@ private struct ManualPlaceSearchSheet: View {
     @State private var query = ""
     @State private var errorMessage: String?
     @State private var cameraPosition: MapCameraPosition = .automatic
+    @FocusState private var isSearchFieldFocused: Bool
 
     /// Landmarks and other large, well-known place categories: when one of these sits
     /// within the minimum pin separation of a smaller nearby POI (e.g. a museum's own gift
@@ -449,11 +456,14 @@ private struct ManualPlaceSearchSheet: View {
                 TextField("Search for a place", text: $query)
                     .textFieldStyle(.roundedBorder)
                     .padding()
+                    .focused($isSearchFieldFocused)
                     .onChange(of: query) { _, newValue in
                         searchService.updateQuery(newValue)
                     }
 
-                if let nearbyCoordinate {
+                // Collapsed while the keyboard is up so the search field and results stay
+                // visible instead of being pushed off-screen by a tall map plus keyboard.
+                if let nearbyCoordinate, !isSearchFieldFocused {
                     Map(position: $cameraPosition) {
                         // Ordinary pins draw first, prominent ones (museums, landmarks, ...)
                         // draw last/on top so a landmark's pin is never hidden behind a
