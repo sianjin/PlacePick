@@ -387,13 +387,36 @@ private struct ManualPlaceSearchSheet: View {
     @State private var errorMessage: String?
     @State private var cameraPosition: MapCameraPosition = .automatic
 
+    /// Landmarks and other large, well-known place categories: when one of these sits
+    /// within the minimum pin separation of a smaller nearby POI (e.g. a museum's own gift
+    /// shop or café), it should be the one whose pin survives thinning, since it's almost
+    /// always the place the user actually means to pick.
+    private static let prominentCategories: Set<MKPointOfInterestCategory> = [
+        .museum, .nationalPark, .park, .university,
+        .airport, .amusementPark, .aquarium, .zoo, .stadium, .theater,
+    ]
+
+    private func isProminent(_ item: MKMapItem) -> Bool {
+        guard let category = item.pointOfInterestCategory else { return false }
+        return Self.prominentCategories.contains(category)
+    }
+
     /// Suggestions that are within ~40m of another suggestion already kept are dropped —
     /// at typical zoom their pins would overlap on screen, making it too easy to tap the
     /// wrong one (especially when the touch that starts a pinch-to-zoom lands near a pin).
+    /// Prominent places (museums, landmarks, parks, ...) are considered first so a small
+    /// POI inside/next to a landmark never wins the slot instead of the landmark itself.
     private var thinnedSuggestions: [MKMapItem] {
         let minimumSeparationMeters: CLLocationDistance = 40
+        let ordered = nearbySuggestions.enumerated().sorted { lhs, rhs in
+            let lhsProminent = isProminent(lhs.element)
+            let rhsProminent = isProminent(rhs.element)
+            if lhsProminent != rhsProminent { return lhsProminent }
+            return lhs.offset < rhs.offset
+        }.map(\.element)
+
         var kept: [MKMapItem] = []
-        for item in nearbySuggestions {
+        for item in ordered {
             let tooClose = kept.contains { existing in
                 CLLocation(latitude: existing.placemark.coordinate.latitude, longitude: existing.placemark.coordinate.longitude)
                     .distance(from: CLLocation(latitude: item.placemark.coordinate.latitude, longitude: item.placemark.coordinate.longitude))
@@ -402,6 +425,22 @@ private struct ManualPlaceSearchSheet: View {
             if !tooClose { kept.append(item) }
         }
         return kept
+    }
+
+    @MapContentBuilder
+    private func placePin(for item: MKMapItem, isProminent: Bool) -> some MapContent {
+        Annotation(item.name ?? "Place", coordinate: item.placemark.coordinate) {
+            Button {
+                onSelect(item)
+            } label: {
+                Image(systemName: isProminent ? "star.circle.fill" : "mappin.circle.fill")
+                    .font(isProminent ? .largeTitle : .title)
+                    .foregroundStyle(.white, isProminent ? Color.orange : Color.accentColor)
+                    .background(Circle().fill(.white).padding(isProminent ? 4 : 3))
+            }
+            .contentShape(Circle())
+            .frame(width: isProminent ? 56 : 44, height: isProminent ? 56 : 44)
+        }
     }
 
     var body: some View {
@@ -416,19 +455,14 @@ private struct ManualPlaceSearchSheet: View {
 
                 if let nearbyCoordinate {
                     Map(position: $cameraPosition) {
-                        ForEach(thinnedSuggestions, id: \.self) { item in
-                            Annotation(item.name ?? "Place", coordinate: item.placemark.coordinate) {
-                                Button {
-                                    onSelect(item)
-                                } label: {
-                                    Image(systemName: "mappin.circle.fill")
-                                        .font(.title)
-                                        .foregroundStyle(.white, Color.accentColor)
-                                        .background(Circle().fill(.white).padding(3))
-                                }
-                                .contentShape(Circle())
-                                .frame(width: 44, height: 44)
-                            }
+                        // Ordinary pins draw first, prominent ones (museums, landmarks, ...)
+                        // draw last/on top so a landmark's pin is never hidden behind a
+                        // smaller nearby POI's pin.
+                        ForEach(thinnedSuggestions.filter { !isProminent($0) }, id: \.self) { item in
+                            placePin(for: item, isProminent: false)
+                        }
+                        ForEach(thinnedSuggestions.filter { isProminent($0) }, id: \.self) { item in
+                            placePin(for: item, isProminent: true)
                         }
                     }
                     .frame(height: 360)
