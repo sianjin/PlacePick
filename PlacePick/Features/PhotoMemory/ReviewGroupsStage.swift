@@ -404,6 +404,7 @@ private struct ManualPlaceSearchSheet: View {
                         cameraPosition = .region(
                             MKCoordinateRegion(center: nearbyCoordinate, latitudinalMeters: 400, longitudinalMeters: 400)
                         )
+                        searchService.updateRegion(around: nearbyCoordinate)
                     }
 
                     Text("Tap a pin on the map, or search below")

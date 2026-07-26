@@ -18,6 +18,16 @@ final class MapSearchService: NSObject, ObservableObject {
         completer.queryFragment = query
     }
 
+    /// Biases completer results toward this region so a nearby match ranks above an
+    /// equally-named match elsewhere, without excluding far-away results outright.
+    func updateRegion(around coordinate: CLLocationCoordinate2D) {
+        completer.region = MKCoordinateRegion(
+            center: coordinate,
+            latitudinalMeters: 5000,
+            longitudinalMeters: 5000
+        )
+    }
+
     func resolve(_ completion: MKLocalSearchCompletion) async throws -> MKMapItem {
         let request = MKLocalSearch.Request(completion: completion)
         let search = MKLocalSearch(request: request)
