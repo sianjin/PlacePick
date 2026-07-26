@@ -235,6 +235,7 @@ private struct ReorderPhotosSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var ordered: [VisitPhoto]
     @State private var draggingPhotoID: VisitPhoto.ID?
+    @State private var targetedPhotoID: VisitPhoto.ID?
 
     init(photos: [VisitPhoto], onSave: @escaping ([VisitPhoto]) -> Void) {
         self.photos = photos
@@ -262,13 +263,33 @@ private struct ReorderPhotosSheet: View {
                                 }
                             }
                             .opacity(draggingPhotoID == photo.id ? 0.5 : 1)
+                            .scaleEffect(targetedPhotoID == photo.id ? 1.05 : 1)
+                            .overlay {
+                                if targetedPhotoID == photo.id {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .strokeBorder(Color.accentColor, lineWidth: 3)
+                                }
+                            }
+                            .animation(.easeOut(duration: 0.15), value: targetedPhotoID)
+                            // Each cell needs a distinct identity for .draggable's preview to
+                            // reflect the actual photo under the finger — without it, SwiftUI
+                            // can reuse/conflate cells that share the same view structure,
+                            // making every drag preview show whichever photo rendered first.
+                            .id(photo.id)
                             .draggable(photo.id.uuidString) {
                                 PhotoAssetThumbnailView(localAssetIdentifier: photo.localAssetIdentifier, fallbackIcon: "photo")
                                     .frame(width: 80, height: 80)
+                                    .id(photo.id)
                                     .onAppear { draggingPhotoID = photo.id }
                             }
+                            // isTargeted suppresses SwiftUI's default drop-target chrome (a
+                            // green "+" and placeholder square), which reads as "insert a
+                            // new photo" — misleading here since reordering never adds one.
+                            // A highlight on the existing thumbnail communicates "swap
+                            // position" instead.
                             .dropDestination(for: String.self) { items, _ in
                                 draggingPhotoID = nil
+                                targetedPhotoID = nil
                                 guard let draggedIDString = items.first,
                                       let draggedID = UUID(uuidString: draggedIDString),
                                       let sourceIndex = ordered.firstIndex(where: { $0.id == draggedID }),
@@ -280,6 +301,8 @@ private struct ReorderPhotosSheet: View {
                                     )
                                 }
                                 return true
+                            } isTargeted: { isTargeted in
+                                targetedPhotoID = isTargeted ? photo.id : nil
                             }
                     }
                 }

@@ -23,6 +23,7 @@ struct ReviewGroupsStage: View {
     @State private var isSearchingGroupID: UUID?
     @State private var activeSheet: ActiveSheet?
     @State private var draggingPhotoID: String?
+    @State private var targetedPhotoID: String?
     @State private var justResolvedGroupID: UUID?
 
     /// Place search and Collection picking are two different sheets that can both be
@@ -183,6 +184,14 @@ struct ReviewGroupsStage: View {
                         }
                     }
                     .opacity(draggingPhotoID == photo.id ? 0.5 : 1)
+                    .scaleEffect(targetedPhotoID == photo.id ? 1.05 : 1)
+                    .overlay {
+                        if targetedPhotoID == photo.id {
+                            RoundedRectangle(cornerRadius: 6)
+                                .strokeBorder(Color.accentColor, lineWidth: 3)
+                        }
+                    }
+                    .animation(.easeOut(duration: 0.15), value: targetedPhotoID)
                     .contextMenu {
                         Button("Move to Another Group") {
                             movingPhoto = (photo, group.id)
@@ -192,13 +201,24 @@ struct ReviewGroupsStage: View {
                             removePhoto(photo, from: group.id)
                         }
                     }
+                    // Each cell needs a distinct identity for .draggable's preview to reflect
+                    // the actual photo under the finger — without it, SwiftUI can reuse/
+                    // conflate cells that share the same view structure, making every drag
+                    // preview show whichever photo happened to render first (the cover).
+                    .id(photo.id)
                     .draggable(photo.id) {
                         PhotoAssetThumbnailView(localAssetIdentifier: photo.localAssetIdentifier, fallbackIcon: "photo")
                             .frame(width: 80, height: 80)
+                            .id(photo.id)
                             .onAppear { draggingPhotoID = photo.id }
                     }
+                    // isTargeted suppresses SwiftUI's default drop-target chrome (a green
+                    // "+" and placeholder square, which reads as "insert a new photo" —
+                    // misleading since reordering never adds one); a highlight on the
+                    // existing thumbnail communicates "swap position" instead.
                     .dropDestination(for: String.self) { items, _ in
                         draggingPhotoID = nil
+                        targetedPhotoID = nil
                         guard let draggedID = items.first,
                               let groupIndex = draft.proposedGroups.firstIndex(where: { $0.id == group.id }),
                               let sourceIndex = draft.proposedGroups[groupIndex].photos.firstIndex(where: { $0.id == draggedID }),
@@ -210,6 +230,8 @@ struct ReviewGroupsStage: View {
                             )
                         }
                         return true
+                    } isTargeted: { isTargeted in
+                        targetedPhotoID = isTargeted ? photo.id : nil
                     }
             }
         }
