@@ -32,7 +32,7 @@ struct PhotoMemoryScreen: View {
                 case .reviewingGroups:
                     ReviewGroupsStage(draft: $draft, onContinue: { stage = .reviewingAndCreating })
                 case .reviewingAndCreating:
-                    ReviewAndCreateStage(draft: draft, onCreated: { stage = .created })
+                    ReviewAndCreateStage(draft: $draft, onCreated: { stage = .created })
                 case .created:
                     createdConfirmation
                 }

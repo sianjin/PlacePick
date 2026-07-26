@@ -6,11 +6,11 @@ import StoreKit
 /// Stage 4 (Review) and Stage 5 (Create). Nothing is saved until the user taps Create —
 /// see MEMORY_CREATION.md Stage 4/5. Each resolved group becomes one Visit; Places are
 /// created or matched to existing ones exactly like manual Capture (createPlace dedups by
-/// Apple Maps identifier, per DATA_MODEL.md §17.1). Place and Collection are both already
-/// chosen per group back in Stage 2 (ReviewGroupsStage) — this screen is a pure summary
-/// before Create, not another place where decisions are made.
+/// Apple Maps identifier, per DATA_MODEL.md §17.1). Place is chosen back in Stage 2
+/// (ReviewGroupsStage); Collection can still be corrected here, since realizing "wrong
+/// Collection" is often only obvious once everything is laid out together at Review.
 struct ReviewAndCreateStage: View {
-    let draft: PhotoImportDraft
+    @Binding var draft: PhotoImportDraft
     let onCreated: () -> Void
 
     @Environment(\.modelContext) private var modelContext
@@ -18,6 +18,12 @@ struct ReviewAndCreateStage: View {
     @Environment(\.requestReview) private var requestReview
     @State private var isCreating = false
     @State private var errorMessage: String?
+    @State private var collectionPickerGroupID: UUID?
+
+    private struct GroupPickerTarget: Identifiable {
+        let groupID: UUID
+        var id: UUID { groupID }
+    }
 
     private var resolvedGroups: [PhotoImportGroup] {
         draft.proposedGroups.compactMap { group in
@@ -47,11 +53,18 @@ struct ReviewAndCreateStage: View {
                             }
                         }
 
-                        if let collection = group.collection {
-                            Label(collection.name, systemImage: collection.icon)
-                                .foregroundStyle(.secondary)
-                                .font(.subheadline)
+                        Button {
+                            collectionPickerGroupID = group.id
+                        } label: {
+                            if let collection = group.collection {
+                                Label(collection.name, systemImage: collection.icon)
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Text("Choose a Collection")
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                        .font(.subheadline)
                     }
                 }
             }
@@ -59,6 +72,18 @@ struct ReviewAndCreateStage: View {
         .listStyle(.plain)
         .navigationTitle("Review")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: Binding(
+            get: { collectionPickerGroupID.map { GroupPickerTarget(groupID: $0) } },
+            set: { collectionPickerGroupID = $0?.groupID }
+        )) { target in
+            CollectionPickerSheet(selection: Binding(
+                get: { draft.proposedGroups.first(where: { $0.id == target.groupID })?.collection },
+                set: { newValue in
+                    guard let index = draft.proposedGroups.firstIndex(where: { $0.id == target.groupID }) else { return }
+                    draft.proposedGroups[index].collection = newValue
+                }
+            ))
+        }
         .safeAreaInset(edge: .bottom) {
             Button {
                 createMemories()
