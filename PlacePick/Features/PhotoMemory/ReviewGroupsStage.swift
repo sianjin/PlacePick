@@ -24,6 +24,7 @@ struct ReviewGroupsStage: View {
     @State private var searchTarget: SearchTarget?
     @State private var collectionPickerGroupID: UUID?
     @State private var draggingPhotoID: String?
+    @State private var justResolvedGroupID: UUID?
 
     private struct SearchTarget: Identifiable {
         let groupID: UUID
@@ -222,6 +223,7 @@ struct ReviewGroupsStage: View {
                 }
 
                 Button {
+                    guard justResolvedGroupID != group.id else { return }
                     collectionPickerGroupID = group.id
                 } label: {
                     if let collection = group.collection {
@@ -355,6 +357,17 @@ struct ReviewGroupsStage: View {
         guard let index = draft.proposedGroups.firstIndex(where: { $0.id == groupID }) else { return }
         draft.proposedGroups[index].status = .resolved(mapItem)
         searchTarget = nil
+
+        // Guards against a stray tap immediately opening the Collection picker the instant
+        // it appears in the newly-resolved row, right under where the finger just tapped
+        // a map pin or suggestion to resolve the place.
+        justResolvedGroupID = groupID
+        Task {
+            try? await Task.sleep(for: .milliseconds(600))
+            if justResolvedGroupID == groupID {
+                justResolvedGroupID = nil
+            }
+        }
     }
 }
 
@@ -374,6 +387,23 @@ private struct ManualPlaceSearchSheet: View {
     @State private var errorMessage: String?
     @State private var cameraPosition: MapCameraPosition = .automatic
 
+    /// Suggestions that are within ~40m of another suggestion already kept are dropped —
+    /// at typical zoom their pins would overlap on screen, making it too easy to tap the
+    /// wrong one (especially when the touch that starts a pinch-to-zoom lands near a pin).
+    private var thinnedSuggestions: [MKMapItem] {
+        let minimumSeparationMeters: CLLocationDistance = 40
+        var kept: [MKMapItem] = []
+        for item in nearbySuggestions {
+            let tooClose = kept.contains { existing in
+                CLLocation(latitude: existing.placemark.coordinate.latitude, longitude: existing.placemark.coordinate.longitude)
+                    .distance(from: CLLocation(latitude: item.placemark.coordinate.latitude, longitude: item.placemark.coordinate.longitude))
+                    < minimumSeparationMeters
+            }
+            if !tooClose { kept.append(item) }
+        }
+        return kept
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -386,20 +416,22 @@ private struct ManualPlaceSearchSheet: View {
 
                 if let nearbyCoordinate {
                     Map(position: $cameraPosition) {
-                        ForEach(nearbySuggestions, id: \.self) { item in
+                        ForEach(thinnedSuggestions, id: \.self) { item in
                             Annotation(item.name ?? "Place", coordinate: item.placemark.coordinate) {
                                 Button {
                                     onSelect(item)
                                 } label: {
                                     Image(systemName: "mappin.circle.fill")
-                                        .font(.title2)
+                                        .font(.title)
                                         .foregroundStyle(.white, Color.accentColor)
-                                        .background(Circle().fill(.white).padding(2))
+                                        .background(Circle().fill(.white).padding(3))
                                 }
+                                .contentShape(Circle())
+                                .frame(width: 44, height: 44)
                             }
                         }
                     }
-                    .frame(height: 180)
+                    .frame(height: 360)
                     .onAppear {
                         cameraPosition = .region(
                             MKCoordinateRegion(center: nearbyCoordinate, latitudinalMeters: 400, longitudinalMeters: 400)
