@@ -333,8 +333,12 @@ struct MemoryCard: View {
             }
 
             // Shows the time as it truly was at this Place (e.g. NYC local time), not
-            // reformatted into whatever time zone this device is currently in.
-            Text(visit.startedAt, format: Date.FormatStyle(time: .shortened, timeZone: placeTimeZone ?? .current))
+            // reformatted into whatever time zone this device is currently in. Built as a
+            // plain String rather than Text(_:format:) — SwiftUI's Text(_:format:) can fail
+            // to re-render when only the FormatStyle's timeZone changes across a state
+            // update while the Date itself does not, since it isn't part of what SwiftUI
+            // diffs to invalidate Text.
+            Text(visit.startedAt.formatted(Date.FormatStyle(time: .shortened, timeZone: placeTimeZone ?? .current)))
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
