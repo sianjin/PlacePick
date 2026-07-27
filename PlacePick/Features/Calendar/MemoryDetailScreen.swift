@@ -22,6 +22,7 @@ struct MemoryDetailScreen: View {
     @State private var isAddingPhotos = false
     @State private var addPhotosErrorMessage: String?
     @State private var isPresentingReorderPhotos = false
+    @State private var placeTimeZone: TimeZone?
 
     private var visitRepository: VisitRepository {
         VisitRepository(modelContext: modelContext)
@@ -72,7 +73,11 @@ struct MemoryDetailScreen: View {
                         }
                         .buttonStyle(.plain)
 
-                        Text(visit.startedAt, format: .dateTime.month().day().year().hour().minute())
+                        // Shows the time as it truly was at this Place (e.g. NYC local time),
+                        // not reformatted into whatever time zone this device is currently in.
+                        Text(visit.startedAt, format: Date.FormatStyle(
+                            date: .abbreviated, time: .shortened, timeZone: placeTimeZone ?? .current
+                        ))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -154,6 +159,11 @@ struct MemoryDetailScreen: View {
             }
         }
         .onAppear { reloadPhotos() }
+        .task(id: visit.place?.id) {
+            guard let place = visit.place else { return }
+            placeTimeZone = PlaceTimeZoneResolver.cached(for: place.coordinate)
+            placeTimeZone = await PlaceTimeZoneResolver.resolve(for: place.coordinate)
+        }
     }
 
     /// Photos first, swipeable, per MEMORY_DETAIL.md — falls back to a single icon

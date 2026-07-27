@@ -34,7 +34,7 @@ enum PhotoLibraryService {
             var longitude = asset?.location?.coordinate.longitude
 
             if capturedAt == nil, let data = try? await item.loadTransferable(type: Data.self) {
-                let exif = PhotoMetadataExtractor.extractMetadata(from: data)
+                let exif = await PhotoMetadataExtractor.extractMetadata(from: data)
                 capturedAt = capturedAt ?? exif.capturedAt
                 latitude = latitude ?? exif.latitude
                 longitude = longitude ?? exif.longitude

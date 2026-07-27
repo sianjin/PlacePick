@@ -294,6 +294,7 @@ struct MemoryCard: View {
     var preloadedCoverPhoto: UIImage? = nil
 
     @Environment(\.modelContext) private var modelContext
+    @State private var placeTimeZone: TimeZone?
 
     private var coverPhotoIdentifier: String? {
         VisitPhotoRepository(modelContext: modelContext).fetchPhotos(for: visit).first?.localAssetIdentifier
@@ -331,11 +332,18 @@ struct MemoryCard: View {
                     .lineLimit(2)
             }
 
-            Text(visit.startedAt, format: .dateTime.hour().minute())
+            // Shows the time as it truly was at this Place (e.g. NYC local time), not
+            // reformatted into whatever time zone this device is currently in.
+            Text(visit.startedAt, format: Date.FormatStyle(time: .shortened, timeZone: placeTimeZone ?? .current))
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .task(id: visit.place?.id) {
+            guard let place = visit.place else { return }
+            placeTimeZone = PlaceTimeZoneResolver.cached(for: place.coordinate)
+            placeTimeZone = await PlaceTimeZoneResolver.resolve(for: place.coordinate)
+        }
     }
 }
 

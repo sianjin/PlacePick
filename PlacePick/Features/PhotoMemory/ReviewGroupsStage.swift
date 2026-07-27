@@ -25,6 +25,7 @@ struct ReviewGroupsStage: View {
     @State private var draggingPhotoID: String?
     @State private var targetedPhotoID: String?
     @State private var justResolvedGroupID: UUID?
+    @State private var timeZoneByGroupID: [UUID: TimeZone] = [:]
 
     /// Place search and Collection picking are two different sheets that can both be
     /// triggered from the same group row. Two independent `.sheet(item:)` modifiers on one
@@ -79,6 +80,7 @@ struct ReviewGroupsStage: View {
         .task {
             for group in draft.proposedGroups {
                 await loadSuggestions(for: group)
+                await loadTimeZone(for: group)
             }
         }
         .confirmationDialog(
@@ -319,10 +321,12 @@ struct ReviewGroupsStage: View {
 
     private func timeRangeLabel(for group: PhotoImportGroup) -> String {
         guard let start = group.proposedStartTime, let end = group.proposedEndTime else { return "" }
+        let timeZone = timeZoneByGroupID[group.id] ?? .current
+        let style = Date.FormatStyle(date: .omitted, time: .shortened, timeZone: timeZone)
         if start == end {
-            return start.formatted(date: .omitted, time: .shortened)
+            return start.formatted(style)
         }
-        return "\(start.formatted(date: .omitted, time: .shortened)) – \(end.formatted(date: .omitted, time: .shortened))"
+        return "\(start.formatted(style)) – \(end.formatted(style))"
     }
 
     private func merge(_ sourceID: UUID?, into targetID: UUID) {
@@ -387,6 +391,18 @@ struct ReviewGroupsStage: View {
 
     private func sortGroups() {
         draft.proposedGroups.sort { (($0.proposedStartTime ?? .distantPast)) < (($1.proposedStartTime ?? .distantPast)) }
+    }
+
+    /// Resolves the IANA time zone at the group's photo location so timeRangeLabel can show
+    /// the true local time the photos were taken (e.g. NYC time), not this device's current
+    /// time zone — same reasoning as PlaceTimeZoneResolver's other call sites.
+    private func loadTimeZone(for group: PhotoImportGroup) async {
+        guard let coordinate = group.approximateCoordinate else { return }
+        if let cached = PlaceTimeZoneResolver.cached(for: coordinate) {
+            timeZoneByGroupID[group.id] = cached
+            return
+        }
+        timeZoneByGroupID[group.id] = await PlaceTimeZoneResolver.resolve(for: coordinate)
     }
 
     private func loadSuggestions(for group: PhotoImportGroup) async {
