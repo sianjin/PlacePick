@@ -241,13 +241,18 @@ struct ReviewGroupsStage: View {
     private func placeResolution(for group: PhotoImportGroup) -> some View {
         switch group.status {
         case .resolved(let mapItem):
+            // Multiple plain Buttons sharing one List row need .buttonStyle(.plain) — without
+            // it, List's default row-level tap handling can route a tap meant for one button
+            // (e.g. "Change") to a sibling button in the same row (e.g. the Collection button).
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
+                HStack(alignment: .top) {
                     Label(mapItem.name ?? "Unnamed Place", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.primary)
                     Spacer()
                     Button("Change") { activeSheet = .search(groupID: group.id) }
                         .font(.subheadline)
+                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
                 }
 
                 Button {
@@ -263,6 +268,9 @@ struct ReviewGroupsStage: View {
                     }
                 }
                 .font(.subheadline)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+                .buttonStyle(.plain)
             }
 
         case .unresolved:
@@ -283,7 +291,14 @@ struct ReviewGroupsStage: View {
                                         .foregroundStyle(.secondary)
                                 }
                             }
+                            // Reserves a fixed, predictable tap region per suggestion and
+                            // extends it to the label's full bounds (not just the glyph runs),
+                            // so a tight stack of short-label buttons can't bleed hit-testing
+                            // into a neighboring sibling button.
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
                     }
                 } else {
                     Text("No nearby suggestions")
@@ -292,6 +307,9 @@ struct ReviewGroupsStage: View {
 
                 Button("Search for a Place") { activeSheet = .search(groupID: group.id) }
                     .font(.subheadline)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
             }
 
         case .skipped:
