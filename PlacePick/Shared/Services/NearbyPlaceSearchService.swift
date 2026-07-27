@@ -6,7 +6,11 @@ import MapKit
 /// confirms or picks a different result. See DATA_MODEL.md §13: location metadata narrows
 /// the search, it never decides Place identity on its own.
 enum NearbyPlaceSearchService {
-    private static let searchRadiusMeters: CLLocationDistance = 200
+    // 200m was too tight for large landmarks (e.g. Times Square) whose registered POI
+    // coordinate can sit well away from wherever within the landmark the photo was actually
+    // taken — the landmark's own pin could fall just outside the radius and never surface
+    // as a suggestion at all, regardless of pin-thinning logic downstream.
+    private static let searchRadiusMeters: CLLocationDistance = 500
 
     /// MKLocalSearch.Request needs a naturalLanguageQuery to reliably return results —
     /// with only a region and resultTypes set (no query text), Apple's API frequently

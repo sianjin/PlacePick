@@ -105,8 +105,11 @@ struct ManualPlaceSearchSheet: View {
                     }
                     .frame(height: 360)
                     .onAppear {
+                        // Matches NearbyPlaceSearchService's 500m search radius so every
+                        // fetched suggestion pin is visible without the user needing to
+                        // zoom out first.
                         cameraPosition = .region(
-                            MKCoordinateRegion(center: nearbyCoordinate, latitudinalMeters: 400, longitudinalMeters: 400)
+                            MKCoordinateRegion(center: nearbyCoordinate, latitudinalMeters: 600, longitudinalMeters: 600)
                         )
                         searchService.updateRegion(around: nearbyCoordinate)
                     }
