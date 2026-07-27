@@ -86,6 +86,11 @@ struct PlaceDetailSheet: View {
                         ) {
                             Label("Share Place", systemImage: "square.and.arrow.up")
                         }
+                        Button {
+                            isPresentingReplacePlace = true
+                        } label: {
+                            Label("Change Place", systemImage: "mappin.and.ellipse")
+                        }
                         Button("Delete", role: .destructive) { isPresentingDeleteConfirmation = true }
                     } label: {
                         Image(systemName: "ellipsis.circle")
