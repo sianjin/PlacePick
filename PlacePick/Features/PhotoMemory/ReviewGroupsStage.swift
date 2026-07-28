@@ -57,18 +57,27 @@ struct ReviewGroupsStage: View {
     }
 
     var body: some View {
-        List {
-            ForEach(resolvableGroups) { group in
-                Section {
-                    groupHeader(group)
-                    photoGrid(for: group)
-                    placeResolution(for: group)
-                } header: {
-                    Text(timeRangeLabel(for: group))
+        // A plain List here silently breaks drag-to-reorder: SwiftUI's .dropDestination
+        // inside a List's row/section content never fires on iOS (Apple Feedback
+        // FB12980427 — the drag starts but the drop is swallowed). ScrollView + LazyVStack
+        // avoids the conflict entirely, same as MemoryDetailScreen's ReorderPhotosSheet,
+        // which uses the identical drag mechanism successfully outside of a List.
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 24) {
+                ForEach(resolvableGroups) { group in
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(timeRangeLabel(for: group))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        groupHeader(group)
+                        photoGrid(for: group)
+                        placeResolution(for: group)
+                    }
+                    Divider()
                 }
             }
+            .padding()
         }
-        .listStyle(.plain)
         .navigationTitle("New Memory")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
