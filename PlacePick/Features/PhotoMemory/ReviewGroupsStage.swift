@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import MapKit
+import PhotosUI
 
 /// Stage 2 — Review Groups & Confirm Places. Combines what were three separate screens
 /// (Review Memory Groups, Confirm Places, and choosing a Collection) into one: each group
@@ -26,6 +27,10 @@ struct ReviewGroupsStage: View {
     @State private var targetedPhotoID: String?
     @State private var justResolvedGroupID: UUID?
     @State private var timeZoneByGroupID: [UUID: TimeZone] = [:]
+    @State private var addPhotosGroupID: UUID?
+    @State private var addPhotosTargetGroupID: UUID?
+    @State private var addPhotosSelection: [PhotosPickerItem] = []
+    @State private var isLoadingAddedPhotos = false
 
     /// Place search and Collection picking are two different sheets that can both be
     /// triggered from the same group row. Two independent `.sheet(item:)` modifiers on one
@@ -91,6 +96,19 @@ struct ReviewGroupsStage: View {
                 await loadSuggestions(for: group)
                 await loadTimeZone(for: group)
             }
+        }
+        .photosPicker(
+            isPresented: Binding(
+                get: { addPhotosGroupID != nil },
+                set: { if !$0 { addPhotosGroupID = nil } }
+            ),
+            selection: $addPhotosSelection,
+            matching: .images,
+            photoLibrary: .shared()
+        )
+        .onChange(of: addPhotosSelection) { _, newValue in
+            guard !newValue.isEmpty, let groupID = addPhotosTargetGroupID else { return }
+            Task { await addPhotos(newValue, to: groupID) }
         }
         .confirmationDialog(
             "Move Photo To",
@@ -246,6 +264,53 @@ struct ReviewGroupsStage: View {
                         targetedPhotoID = isTargeted ? photo.id : nil
                     }
             }
+
+            Button {
+                addPhotosTargetGroupID = group.id
+                addPhotosGroupID = group.id
+            } label: {
+                if isLoadingAddedPhotos && addPhotosGroupID == group.id {
+                    ProgressView()
+                        .aspectRatio(1, contentMode: .fit)
+                } else {
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(Color.secondary.opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: [4]))
+                        .aspectRatio(1, contentMode: .fit)
+                        .overlay {
+                            Image(systemName: "plus")
+                                .foregroundStyle(.secondary)
+                        }
+                }
+            }
+            .disabled(isLoadingAddedPhotos)
+        }
+    }
+
+    private func addPhotos(_ items: [PhotosPickerItem], to groupID: UUID) async {
+        isLoadingAddedPhotos = true
+        defer {
+            isLoadingAddedPhotos = false
+            addPhotosSelection = []
+            addPhotosGroupID = nil
+            addPhotosTargetGroupID = nil
+        }
+
+        let candidates = await PhotoLibraryService.loadCandidates(for: items)
+        guard !candidates.isEmpty, let index = draft.proposedGroups.firstIndex(where: { $0.id == groupID }) else { return }
+
+        let existingIDs = Set(draft.proposedGroups[index].photos.map(\.id))
+        let newCandidates = candidates.filter { !existingIDs.contains($0.id) }
+        guard !newCandidates.isEmpty else { return }
+
+        draft.proposedGroups[index].photos.append(contentsOf: newCandidates)
+        draft.proposedGroups[index].photos.sort { $0.capturedAt < $1.capturedAt }
+        sortGroups()
+
+        // New photos can shift the group's time range and approximate coordinate — refresh
+        // suggestions/time zone so they reflect the widened group, same as initial load.
+        if let refreshed = draft.proposedGroups.first(where: { $0.id == groupID }) {
+            await loadSuggestions(for: refreshed)
+            await loadTimeZone(for: refreshed)
         }
     }
 
