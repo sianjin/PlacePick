@@ -8,6 +8,7 @@ final class PlaceCollection {
     var name: String = ""
     var icon: String = ""
     var order: Int = 0
+    var modifiedAt: Date = Date.now
 
     /// Inverse of Place.collection — required by CloudKit ("all relationships must have an
     /// inverse"). Application code queries Places by Collection via #Predicate on Place
@@ -18,12 +19,14 @@ final class PlaceCollection {
         id: UUID = UUID(),
         name: String,
         icon: String,
-        order: Int
+        order: Int,
+        modifiedAt: Date = .now
     ) {
         self.id = id
         self.name = name
         self.icon = icon
         self.order = order
+        self.modifiedAt = modifiedAt
     }
 }
 

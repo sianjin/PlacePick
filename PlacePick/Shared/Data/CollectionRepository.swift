@@ -47,15 +47,17 @@ final class CollectionRepository {
     /// devices each inserted their own "Food"/"Drink"/etc. batch before seedSuggestedCollectionsIfNeeded
     /// checked synced state, and CloudKit merged all the batches together instead of deduping
     /// them (it has no concept of these rows being "the same" Collection). This merges
-    /// same-named Collections into the lowest-`order` survivor, reassigning every affected
-    /// Place before deleting the rest — safe to run repeatedly since a store with no
-    /// duplicates left is a no-op.
+    /// same-named Collections into the most-recently-modified survivor (not the lowest
+    /// `order` — a freshly reseeded batch on reinstall always has low sequential orders
+    /// matching the original default, so picking by order silently reverts any reordering
+    /// the user made before reinstalling), reassigning every affected Place before deleting
+    /// the rest. Safe to run repeatedly since a store with no duplicates left is a no-op.
     func mergeDuplicateCollections() {
         let groups = Dictionary(grouping: fetchAllOrdered(), by: \.name)
         guard groups.values.contains(where: { $0.count > 1 }) else { return }
 
         for (_, duplicates) in groups where duplicates.count > 1 {
-            let sorted = duplicates.sorted { $0.order < $1.order }
+            let sorted = duplicates.sorted { $0.modifiedAt > $1.modifiedAt }
             let survivor = sorted[0]
             for duplicate in sorted.dropFirst() {
                 try? delete(duplicate, reassigningTo: survivor)
@@ -65,17 +67,20 @@ final class CollectionRepository {
 
     func rename(_ collection: PlaceCollection, to name: String) {
         collection.name = name
+        collection.modifiedAt = .now
         try? modelContext.save()
     }
 
     func setIcon(_ collection: PlaceCollection, to icon: String) {
         collection.icon = icon
+        collection.modifiedAt = .now
         try? modelContext.save()
     }
 
     func reorder(_ collections: [PlaceCollection]) {
         for (index, collection) in collections.enumerated() {
             collection.order = index
+            collection.modifiedAt = .now
         }
         try? modelContext.save()
     }
