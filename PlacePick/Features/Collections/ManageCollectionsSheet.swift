@@ -123,6 +123,7 @@ struct ManageCollectionsSheet: View {
         var reordered = collections
         reordered.move(fromOffsets: source, toOffset: destination)
         repository.reorder(reordered)
+        Haptics.selection()
     }
 }
 

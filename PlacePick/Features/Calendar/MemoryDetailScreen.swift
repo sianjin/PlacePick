@@ -314,6 +314,7 @@ private struct ReorderPhotosSheet: View {
                                         toOffset: destinationIndex > sourceIndex ? destinationIndex + 1 : destinationIndex
                                     )
                                 }
+                                Haptics.selection()
                                 return true
                             } isTargeted: { isTargeted in
                                 targetedPhotoID = isTargeted ? photo.id : nil
