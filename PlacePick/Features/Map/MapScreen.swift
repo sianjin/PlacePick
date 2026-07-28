@@ -14,6 +14,8 @@ struct MapScreen: View {
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var selectedCollection: PlaceCollection?
     @State private var selectedPlace: Place?
+    @State private var poiPreviewMapItem: MKMapItem?
+    @State private var poiSaveMapItem: MKMapItem?
     @State private var isPresentingAddPlace = false
     @State private var isPresentingPhotoMemory = false
     @State private var isPresentingCaptureChoice = false
@@ -40,33 +42,27 @@ struct MapScreen: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            Map(position: $cameraPosition, selection: $selectedPlace) {
-                let visitsByPlaceID = visitsByPlaceID
-                ForEach(visiblePlaces) { place in
-                    let importance = recommendationEngine.importance(
-                        for: place,
-                        visits: visitsByPlaceID[place.id] ?? [],
-                        now: .now
-                    )
-                    Annotation(
-                        MapLabelPresentation.shouldShowLabel(importance: importance, span: currentSpan) ? place.name : "",
-                        coordinate: place.coordinate
-                    ) {
-                        PlaceMapMarker(place: place, importance: importance)
-                    }
-                    .tag(place)
-                }
-                UserAnnotation()
-            }
-            .mapControls {
-                MapCompass()
-            }
-            .ignoresSafeArea(edges: .top)
-            .onMapCameraChange(frequency: .continuous) { context in
-                currentSpan = context.region.span
-            }
-            .onMapCameraChange(frequency: .onEnd) { context in
-                lastViewport.save(context.region)
+            if #available(iOS 18.0, *) {
+                POICapableMapView(
+                    cameraPosition: $cameraPosition,
+                    currentSpan: $currentSpan,
+                    selectedPlace: $selectedPlace,
+                    visiblePlaces: visiblePlaces,
+                    visitsByPlaceID: visitsByPlaceID,
+                    recommendationEngine: recommendationEngine,
+                    lastViewport: lastViewport,
+                    onFeatureTapped: { feature in handleMapFeatureSelection(feature) }
+                )
+            } else {
+                PlacesOnlyMapView(
+                    cameraPosition: $cameraPosition,
+                    currentSpan: $currentSpan,
+                    selectedPlace: $selectedPlace,
+                    visiblePlaces: visiblePlaces,
+                    visitsByPlaceID: visitsByPlaceID,
+                    recommendationEngine: recommendationEngine,
+                    lastViewport: lastViewport
+                )
             }
 
             CollectionBar(
@@ -75,6 +71,23 @@ struct MapScreen: View {
                 onManage: { isPresentingManageCollections = true }
             )
             .padding(.top, 8)
+
+            if let poiPreviewMapItem {
+                VStack {
+                    Spacer()
+                    POIPreviewCard(
+                        mapItem: poiPreviewMapItem,
+                        onSave: {
+                            poiSaveMapItem = poiPreviewMapItem
+                            self.poiPreviewMapItem = nil
+                        },
+                        onDismiss: {
+                            self.poiPreviewMapItem = nil
+                        }
+                    )
+                    .padding(.bottom, 88)
+                }
+            }
         }
         .overlay(alignment: .bottomTrailing) {
             Button {
@@ -119,6 +132,22 @@ struct MapScreen: View {
         .sheet(item: $receivedCollectionSnapshot) { snapshot in
             ReceiveCollectionSheet(snapshot: snapshot) {}
         }
+        .sheet(isPresented: Binding(
+            get: { poiSaveMapItem != nil },
+            set: { if !$0 { poiSaveMapItem = nil } }
+        )) {
+            if let mapItem = poiSaveMapItem {
+                NavigationStack {
+                    PersonalInfoForm(
+                        mapItem: mapItem,
+                        onCancel: { poiSaveMapItem = nil },
+                        onSave: { draft in savePOI(mapItem: mapItem, relationship: draft) }
+                    )
+                    .navigationTitle("Add Place")
+                    .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+        }
         .task {
             let collectionRepository = CollectionRepository(modelContext: modelContext)
             collectionRepository.seedSuggestedCollectionsIfNeeded()
@@ -158,6 +187,53 @@ struct MapScreen: View {
         }
 
         openAddPlaceFromPendingImport(searchText: pendingImport.suggestedSearchText ?? "")
+    }
+
+    /// Tapping a native Apple Maps POI (iOS 18+ only — see POICapableMapView) resolves an
+    /// MKMapItem and, if it isn't already saved (§10.3 Duplicate Identity match), shows
+    /// POIPreviewCard as a fast Save entry point instead of routing through AddPlaceScreen's
+    /// search list. Tapping a Place we already saved opens its detail sheet directly.
+    @available(iOS 18.0, *)
+    private func handleMapFeatureSelection(_ feature: MapFeature) {
+        Task {
+            let request = MKMapItemRequest(feature: feature)
+            guard let mapItem = try? await request.mapItem else { return }
+
+            let repository = PlaceRepository(modelContext: modelContext)
+            if let existing = repository.findNearbyMatch(
+                name: mapItem.name ?? "",
+                latitude: mapItem.placemark.coordinate.latitude,
+                longitude: mapItem.placemark.coordinate.longitude
+            ) {
+                selectedPlace = existing
+                return
+            }
+
+            poiPreviewMapItem = mapItem
+        }
+    }
+
+    private func savePOI(mapItem: MKMapItem, relationship: PlaceRelationshipDraft) {
+        let repository = PlaceRepository(modelContext: modelContext)
+        let creationService = PlaceCreationService(
+            repository: repository,
+            visitRepository: VisitRepository(modelContext: modelContext)
+        )
+
+        do {
+            let result = try creationService.createPlace(from: mapItem, relationship: relationship)
+            switch result {
+            case .created(let place):
+                Haptics.success()
+                poiSaveMapItem = nil
+                selectedPlace = place
+            case .existing(let place):
+                poiSaveMapItem = nil
+                selectedPlace = place
+            }
+        } catch {
+            poiSaveMapItem = nil
+        }
     }
 
     /// §10.2 Receiving an Existing Place: dedup happens before any UI is shown — an
@@ -222,6 +298,102 @@ private struct LastViewportStore {
             center: CLLocationCoordinate2D(latitude: values[0], longitude: values[1]),
             span: MKCoordinateSpan(latitudeDelta: values[2], longitudeDelta: values[3])
         )
+    }
+}
+
+/// iOS 17 fallback: identical to the app's original Map, tap-to-select only works for
+/// Places the user already saved. Native Apple Maps POI tap-selection needs
+/// `mapFeatureSelectionAccessory` (iOS 18+), which has no confirmed-reliable iOS 17
+/// equivalent — see POICapableMapView.
+private struct PlacesOnlyMapView: View {
+    @Binding var cameraPosition: MapCameraPosition
+    @Binding var currentSpan: MKCoordinateSpan
+    @Binding var selectedPlace: Place?
+    let visiblePlaces: [Place]
+    let visitsByPlaceID: [UUID: [Visit]]
+    let recommendationEngine: RecommendationEngine
+    let lastViewport: LastViewportStore
+
+    var body: some View {
+        Map(position: $cameraPosition, selection: $selectedPlace) {
+            ForEach(visiblePlaces) { place in
+                let importance = recommendationEngine.importance(
+                    for: place,
+                    visits: visitsByPlaceID[place.id] ?? [],
+                    now: .now
+                )
+                Annotation(
+                    MapLabelPresentation.shouldShowLabel(importance: importance, span: currentSpan) ? place.name : "",
+                    coordinate: place.coordinate
+                ) {
+                    PlaceMapMarker(place: place, importance: importance)
+                }
+                .tag(place)
+            }
+            UserAnnotation()
+        }
+        .mapControls {
+            MapCompass()
+        }
+        .ignoresSafeArea(edges: .top)
+        .onMapCameraChange(frequency: .continuous) { context in
+            currentSpan = context.region.span
+        }
+        .onMapCameraChange(frequency: .onEnd) { context in
+            lastViewport.save(context.region)
+        }
+    }
+}
+
+/// iOS 18+: adds tap-to-select on native Apple Maps POIs via `MapFeature` selection plus
+/// `mapFeatureSelectionAccessory`, alongside the existing saved-Place selection.
+@available(iOS 18.0, *)
+private struct POICapableMapView: View {
+    @Binding var cameraPosition: MapCameraPosition
+    @Binding var currentSpan: MKCoordinateSpan
+    @Binding var selectedPlace: Place?
+    let visiblePlaces: [Place]
+    let visitsByPlaceID: [UUID: [Visit]]
+    let recommendationEngine: RecommendationEngine
+    let lastViewport: LastViewportStore
+    let onFeatureTapped: (MapFeature) -> Void
+
+    @State private var selectedFeature: MapFeature?
+
+    var body: some View {
+        Map(position: $cameraPosition, selection: $selectedFeature) {
+            ForEach(visiblePlaces) { place in
+                let importance = recommendationEngine.importance(
+                    for: place,
+                    visits: visitsByPlaceID[place.id] ?? [],
+                    now: .now
+                )
+                Annotation(
+                    MapLabelPresentation.shouldShowLabel(importance: importance, span: currentSpan) ? place.name : "",
+                    coordinate: place.coordinate
+                ) {
+                    PlaceMapMarker(place: place, importance: importance)
+                        .onTapGesture { selectedPlace = place }
+                }
+            }
+            UserAnnotation()
+        }
+        .mapFeatureSelectionAccessory(.callout)
+        .mapControls {
+            MapCompass()
+        }
+        .ignoresSafeArea(edges: .top)
+        .onMapCameraChange(frequency: .continuous) { context in
+            currentSpan = context.region.span
+        }
+        .onMapCameraChange(frequency: .onEnd) { context in
+            lastViewport.save(context.region)
+        }
+        .onChange(of: selectedFeature) { _, newValue in
+            guard let newValue else { return }
+            onFeatureTapped(newValue)
+            selectedFeature = nil
+        }
     }
 }
 
