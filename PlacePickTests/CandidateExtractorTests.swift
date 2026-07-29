@@ -66,4 +66,25 @@ struct CandidateExtractorTests {
         let result = CandidateExtractor.extractSearchText(title: "", text: "", url: nil)
         #expect(result == nil)
     }
+
+    /// Maps hosts are excluded from the domain fallback because they're never a usable place
+    /// name ("maps.apple.com" isn't a place) and MapsLinkResolver gives them a real shot at
+    /// the actual name via redirect resolution instead — see MapScreen.handlePendingImport.
+    @Test func returnsNilForAppleMapsHostInsteadOfDomainText() {
+        let result = CandidateExtractor.extractSearchText(
+            title: nil,
+            text: nil,
+            url: URL(string: "https://maps.apple.com/p/abc123")
+        )
+        #expect(result == nil)
+    }
+
+    @Test func returnsNilForGoogleMapsShortLinkInsteadOfDomainText() {
+        let result = CandidateExtractor.extractSearchText(
+            title: nil,
+            text: nil,
+            url: URL(string: "https://maps.app.goo.gl/xyz789")
+        )
+        #expect(result == nil)
+    }
 }

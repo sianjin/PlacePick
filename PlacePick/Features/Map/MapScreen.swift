@@ -196,6 +196,22 @@ struct MapScreen: View {
             return
         }
 
+        // A shared Maps link (including short links like maps.app.goo.gl or maps.apple.com/p/...)
+        // carries no place name the Share Extension can read without a network round-trip, so
+        // resolution happens here instead — see IMPORT_PIPELINE.md "URL Resolution" and
+        // MapsLinkResolver. Some senders (observed from Google Maps' share sheet) hand off the
+        // link as a plain-text attachment rather than a public.url item, so sourceURL alone
+        // isn't reliable — a Maps URL embedded in sharedText needs the same chance at
+        // resolution. Falls back to the extension's weak text/title candidate (never raw
+        // domain text) if no Maps link is found anywhere, or resolution fails or times out.
+        if let mapsURL = pendingImport.sourceURL ?? Self.firstMapsURL(in: pendingImport.sharedText) {
+            Task {
+                let resolved = await MapsLinkResolver.resolve(mapsURL)
+                openAddPlaceFromPendingImport(searchText: resolved?.name ?? pendingImport.suggestedSearchText ?? "")
+            }
+            return
+        }
+
         openAddPlaceFromPendingImport(searchText: pendingImport.suggestedSearchText ?? "")
     }
 
@@ -260,17 +276,31 @@ struct MapScreen: View {
     /// Every capture path — manual or shared — converges on the same AddPlaceScreen
     /// (IMPORT_PIPELINE.md "Import Boundary"). The suggested search text is only ever a
     /// starting point the user can edit or clear; it never bypasses MapKit selection.
+    ///
+    /// If AddPlaceScreen is already open (e.g. the user shared one place and, without
+    /// saving/cancelling, shared a second), simply updating `addPlaceInitialQuery` is enough —
+    /// AddPlaceScreen's own `.onChange(of: initialQuery)` resets its state to match. This used
+    /// to force-dismiss and re-present the sheet to get a fresh instance, but `.sheet` doesn't
+    /// guarantee tearing down view identity on a quick false→true toggle, so that trick could
+    /// silently leave the *previous* share's query and selection on screen.
     private func openAddPlaceFromPendingImport(searchText: String) {
         selectedPlace = nil
         addPlaceInitialQuery = searchText
+        isPresentingAddPlace = true
+    }
 
-        if isPresentingAddPlace {
-            // Force a fresh AddPlaceScreen instance so the new initialQuery actually applies.
-            isPresentingAddPlace = false
-            DispatchQueue.main.async { isPresentingAddPlace = true }
-        } else {
-            isPresentingAddPlace = true
-        }
+    /// Some share sources (observed from Google Maps) hand off a Maps link as a plain-text
+    /// attachment instead of a public.url item, so PendingImport.sourceURL is nil even though
+    /// a URL is right there in the shared text. NSDataDetector is Foundation's own link finder
+    /// — reused here rather than a hand-rolled regex, and scoped to the first match only since
+    /// a share payload is expected to carry at most one link.
+    private static func firstMapsURL(in text: String?) -> URL? {
+        guard let text, !text.isEmpty,
+              let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+        else { return nil }
+
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        return detector.matches(in: text, range: range).first?.url
     }
 
     /// Restores the last browsed region when one exists. Otherwise, if location is already

@@ -47,9 +47,25 @@ enum CandidateExtractor {
 
     /// A weak, last-resort fallback: the URL's host, minus common prefixes like "www.".
     /// Never treated as a reliable place name — just enough to seed a manual search.
+    ///
+    /// Maps links are excluded: their host ("maps.apple.com", "google.com") is never a
+    /// usable place name, and MapsLinkResolver already gives them a real chance at the
+    /// actual name via redirect resolution — see MapScreen.handlePendingImport. Falling
+    /// through to the domain here would only replace a good empty-field fallback with a
+    /// misleading one.
     private static func weakFallback(from url: URL) -> String? {
         guard let host = url.host else { return nil }
+        guard !isMapsHost(host) else { return nil }
         let stripped = host.replacingOccurrences(of: #"^www\."#, with: "", options: .regularExpression)
         return stripped.isEmpty ? nil : stripped
+    }
+
+    private static func isMapsHost(_ host: String) -> Bool {
+        let lowered = host.lowercased()
+        return lowered == "maps.apple.com"
+            || lowered == "maps.apple"
+            || lowered == "goo.gl"
+            || lowered == "maps.app.goo.gl"
+            || lowered.hasSuffix("google.com")
     }
 }
