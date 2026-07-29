@@ -124,7 +124,6 @@ Visit = one specific experience
 | Apple Maps identity | Place |
 | Place name | Place |
 | Coordinates | Place |
-| Category | Place |
 | Collections | Place |
 | Favorite | Place |
 | Experience time | Visit, derived from Photos |
@@ -192,7 +191,6 @@ Place
 ├── name
 ├── latitude
 ├── longitude
-├── category
 ├── isFavorite
 ├── createdAt
 ├── modifiedAt
@@ -250,18 +248,6 @@ longitude: Double
 Canonical longitude derived from Apple Maps.
 
 It is not freely editable.
-
-### `category`
-
-```swift
-category: PlaceCategory
-```
-
-User-facing high-level category.
-
-Category belongs to Place because it describes how the user understands the location across time.
-
-Category is preserved during Replace Map Reference unless a future documented product rule explicitly changes this behavior.
 
 ### `isFavorite`
 
@@ -484,6 +470,14 @@ Durable PlacePick-managed image reference.
 
 The exact storage mechanism belongs in implementation and sync documentation.
 
+**Not yet implemented — reference-only for MVP, durable copy deferred.** In the current
+implementation this field is always a copy of `localAssetIdentifier`, not an independent
+PlacePick-managed copy. This is a deliberate MVP tradeoff: a real durable copy would add
+on-device storage growth and new implementation surface for a failure mode (original Photo
+deleted, or viewing on a second device before it syncs) that is real but not yet common
+enough to justify before MVP. Revisit if durability across deletion/multi-device becomes a
+priority.
+
 ### `capturedAt`
 
 ```swift
@@ -572,7 +566,6 @@ Because Visits require Photos, non-visit information must remain separate.
 Place-level fields may include:
 
 - Favorite
-- Category
 - Collections
 
 The MVP should avoid introducing a general Place Note unless there is a clear product need.
@@ -1005,7 +998,6 @@ Place Detail renders one Place and its Visits.
 ```text
 Place
 ├── Favorite
-├── Category
 ├── Collections
 └── Memories
     ├── Visit A
@@ -1171,7 +1163,6 @@ Collection
     ▼
 Place
 ├── Apple Maps identity
-├── Category
 ├── Favorite
 │
 └── Visit

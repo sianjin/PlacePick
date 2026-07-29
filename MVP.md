@@ -124,7 +124,6 @@ Shows:
 
 - Place information
 - Favorite
-- Category
 - Collections
 - Memory history
 
