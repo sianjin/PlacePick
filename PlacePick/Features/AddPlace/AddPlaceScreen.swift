@@ -8,6 +8,14 @@ struct AddPlaceScreen: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.requestReview) private var requestReview
 
+    /// Not read directly by the view — see `.onChange(of: initialQuery)` below. A second
+    /// share arriving while this screen is already open reuses the same view instance (SwiftUI
+    /// doesn't guarantee identity is torn down just because the presenting `.sheet` toggles off
+    /// and back on quickly), so `init`'s one-time `State(initialValue:)` would silently keep
+    /// showing the first share's query. Reacting to changes in this property instead keeps
+    /// every subsequent share live, regardless of view identity.
+    let initialQuery: String
+
     @StateObject private var searchService = MapSearchService()
     @State private var query: String
     @State private var selectedMapItem: MKMapItem?
@@ -15,6 +23,7 @@ struct AddPlaceScreen: View {
     @State private var errorMessage: String?
 
     init(initialQuery: String = "") {
+        self.initialQuery = initialQuery
         _query = State(initialValue: initialQuery)
     }
 
@@ -50,6 +59,17 @@ struct AddPlaceScreen: View {
         .onAppear {
             guard !query.isEmpty else { return }
             searchService.updateQuery(query)
+        }
+        .onChange(of: initialQuery) { _, newValue in
+            // A new share replacing an already-open AddPlaceScreen: reset every piece of
+            // in-progress state, not just the query text, so the previous share's selection
+            // can't linger underneath the new search.
+            query = newValue
+            selectedMapItem = nil
+            existingPlace = nil
+            errorMessage = nil
+            guard !newValue.isEmpty else { return }
+            searchService.updateQuery(newValue)
         }
     }
 
