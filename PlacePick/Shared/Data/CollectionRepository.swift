@@ -63,6 +63,12 @@ final class CollectionRepository {
                 try? delete(duplicate, reassigningTo: survivor)
             }
         }
+
+        // A merge only decides which row survives per name — it says nothing about how that
+        // survivor's `order` (inherited from whichever duplicate happened to carry it) relates
+        // to every other Collection's `order` in the set. Re-numbering 0..n by current order
+        // preserves relative sequence while guaranteeing no gaps/collisions across the merge.
+        reorder(fetchAllOrdered())
     }
 
     func rename(_ collection: PlaceCollection, to name: String) {

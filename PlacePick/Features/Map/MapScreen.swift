@@ -149,11 +149,21 @@ struct MapScreen: View {
             }
         }
         .task {
+            locationAuthorization.requestWhenInUseAuthorizationIfNeeded()
+            resolveInitialViewport()
+        }
+        .task {
+            // On a fresh install the local store is empty until CloudKit's initial import
+            // lands, which can take several seconds — seeding immediately would insert a
+            // default batch that then races/duplicates with the user's real synced
+            // Collections (see CollectionRepository.seedSuggestedCollectionsIfNeeded).
+            // Waiting here gives CloudKit a head start before we conclude "no Collections"
+            // really means "new install" rather than "sync hasn't arrived yet."
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
             let collectionRepository = CollectionRepository(modelContext: modelContext)
             collectionRepository.seedSuggestedCollectionsIfNeeded()
             collectionRepository.mergeDuplicateCollections()
-            locationAuthorization.requestWhenInUseAuthorizationIfNeeded()
-            resolveInitialViewport()
         }
         .onChange(of: pendingImportCoordinator.pendingImport) { _, newValue in
             guard newValue != nil else { return }
