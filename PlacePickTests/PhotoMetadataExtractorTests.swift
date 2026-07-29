@@ -31,10 +31,10 @@ struct PhotoMetadataExtractorTests {
         return data as Data
     }
 
-    @Test func extractsCaptureDateFromEXIF() {
+    @Test func extractsCaptureDateFromEXIF() async {
         let jpegData = makeJPEGData(exif: [kCGImagePropertyExifDateTimeOriginal: "2026:07:18 09:12:00"])
 
-        let metadata = PhotoMetadataExtractor.extractMetadata(from: jpegData)
+        let metadata = await PhotoMetadataExtractor.extractMetadata(from: jpegData)
 
         var expected = DateComponents()
         expected.year = 2026; expected.month = 7; expected.day = 18
@@ -44,7 +44,7 @@ struct PhotoMetadataExtractorTests {
         #expect(metadata.capturedAt == expectedDate)
     }
 
-    @Test func extractsGPSCoordinateWithCorrectSign() {
+    @Test func extractsGPSCoordinateWithCorrectSign() async {
         let jpegData = makeJPEGData(gps: [
             kCGImagePropertyGPSLatitude: 37.7749,
             kCGImagePropertyGPSLatitudeRef: "N",
@@ -52,31 +52,31 @@ struct PhotoMetadataExtractorTests {
             kCGImagePropertyGPSLongitudeRef: "W"
         ])
 
-        let metadata = PhotoMetadataExtractor.extractMetadata(from: jpegData)
+        let metadata = await PhotoMetadataExtractor.extractMetadata(from: jpegData)
 
         #expect(metadata.latitude == 37.7749)
         #expect(metadata.longitude == -122.4194)
     }
 
-    @Test func returnsNilCaptureDateWhenNoEXIFPresent() {
+    @Test func returnsNilCaptureDateWhenNoEXIFPresent() async {
         let jpegData = makeJPEGData()
 
-        let metadata = PhotoMetadataExtractor.extractMetadata(from: jpegData)
+        let metadata = await PhotoMetadataExtractor.extractMetadata(from: jpegData)
 
         #expect(metadata.capturedAt == nil)
     }
 
-    @Test func returnsNilCoordinateWhenNoGPSPresent() {
+    @Test func returnsNilCoordinateWhenNoGPSPresent() async {
         let jpegData = makeJPEGData(exif: [kCGImagePropertyExifDateTimeOriginal: "2026:07:18 09:12:00"])
 
-        let metadata = PhotoMetadataExtractor.extractMetadata(from: jpegData)
+        let metadata = await PhotoMetadataExtractor.extractMetadata(from: jpegData)
 
         #expect(metadata.latitude == nil)
         #expect(metadata.longitude == nil)
     }
 
-    @Test func garbageDataProducesNilMetadataRatherThanCrashing() {
-        let metadata = PhotoMetadataExtractor.extractMetadata(from: Data([0x00, 0x01, 0x02]))
+    @Test func garbageDataProducesNilMetadataRatherThanCrashing() async {
+        let metadata = await PhotoMetadataExtractor.extractMetadata(from: Data([0x00, 0x01, 0x02]))
 
         #expect(metadata.capturedAt == nil)
         #expect(metadata.latitude == nil)
