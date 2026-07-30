@@ -394,6 +394,18 @@ The saved Place always uses Apple Maps identity.
 
 ---
 
+## Yelp URLs
+
+Yelp links may provide a Place name via the yelp.com/biz/&lt;slug&gt; URL slug.
+
+Yelp blocks automated page fetches, so only the URL itself is used — never page content.
+
+These values become Candidate information for Apple Maps Search.
+
+The saved Place always uses Apple Maps identity.
+
+---
+
 ## Social Media URLs
 
 Social-media links should use only information already provided through the share payload.

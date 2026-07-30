@@ -196,17 +196,41 @@ struct MapScreen: View {
             return
         }
 
-        // A shared Maps link (including short links like maps.app.goo.gl or maps.apple.com/p/...)
-        // carries no place name the Share Extension can read without a network round-trip, so
-        // resolution happens here instead — see IMPORT_PIPELINE.md "URL Resolution" and
-        // MapsLinkResolver. Some senders (observed from Google Maps' share sheet) hand off the
-        // link as a plain-text attachment rather than a public.url item, so sourceURL alone
-        // isn't reliable — a Maps URL embedded in sharedText needs the same chance at
-        // resolution. Falls back to the extension's weak text/title candidate (never raw
-        // domain text) if no Maps link is found anywhere, or resolution fails or times out.
-        if let mapsURL = pendingImport.sourceURL ?? Self.firstMapsURL(in: pendingImport.sharedText) {
+        // A shared Maps or Yelp link (including short links like maps.app.goo.gl,
+        // maps.apple.com/p/..., or yelp.to/...) carries no place name the Share Extension can
+        // read without a network round-trip, so resolution happens here instead — see
+        // IMPORT_PIPELINE.md "URL Resolution", MapsLinkResolver, and YelpLinkResolver. Some
+        // senders (observed from Google Maps' share sheet) hand off the link as a plain-text
+        // attachment rather than a public.url item, so sourceURL alone isn't reliable — a link
+        // embedded in sharedText needs the same chance at resolution. Falls back to the
+        // extension's weak text/title candidate (never raw domain text) if no recognized link
+        // is found anywhere, or resolution fails or times out.
+        if let linkURL = pendingImport.sourceURL ?? Self.firstMapsURL(in: pendingImport.sharedText) {
+            // Yelp's share caption ("Check out Noodle Panda") already carries a clean name with
+            // zero network cost, and is preferred over YelpLinkResolver's slug-derived name
+            // regardless (see below) — so for a Yelp link, check it before ever starting a
+            // network round-trip. This also sidesteps the redirect chain's real-device latency
+            // (yelp.to → an app.adjust.com deferred-deep-link hop, which was measured taking
+            // several seconds and occasionally missing the timeout entirely on a freshly
+            // launched process — much slower than Maps' single-hop redirects).
+            if YelpLinkResolver.isYelpHost(linkURL), let captionName = Self.yelpCaptionName(from: pendingImport.sharedText) {
+                openAddPlaceFromPendingImport(searchText: captionName)
+                return
+            }
+
             Task {
-                let resolved = await MapsLinkResolver.resolve(mapsURL)
+                var resolved: MapsLinkCandidate?
+
+                // Route directly to the matching resolver by host rather than trying
+                // MapsLinkResolver first and falling through — trying both sequentially would
+                // double network latency for every Yelp link (Maps' own HEAD request has to
+                // fail/time out before Yelp's even starts).
+                if YelpLinkResolver.isYelpHost(linkURL) {
+                    resolved = await YelpLinkResolver.resolve(linkURL)
+                } else {
+                    resolved = await MapsLinkResolver.resolve(linkURL)
+                }
+
                 openAddPlaceFromPendingImport(searchText: resolved?.name ?? pendingImport.suggestedSearchText ?? "")
             }
             return
@@ -289,7 +313,7 @@ struct MapScreen: View {
         isPresentingAddPlace = true
     }
 
-    /// Some share sources (observed from Google Maps) hand off a Maps link as a plain-text
+    /// Some share sources (observed from Google Maps) hand off a link as a plain-text
     /// attachment instead of a public.url item, so PendingImport.sourceURL is nil even though
     /// a URL is right there in the shared text. NSDataDetector is Foundation's own link finder
     /// — reused here rather than a hand-rolled regex, and scoped to the first match only since
@@ -301,6 +325,26 @@ struct MapScreen: View {
 
         let range = NSRange(text.startIndex..<text.endIndex, in: text)
         return detector.matches(in: text, range: range).first?.url
+    }
+
+    /// Yelp's share sheet produces caption text of the form "Check out <Place Name>" alongside
+    /// the yelp.to link. Strips that fixed prefix, and the URL itself if present (some senders
+    /// append it to the same string) — only ever a search hint, never treated as verified.
+    private static func yelpCaptionName(from sharedText: String?) -> String? {
+        guard var text = sharedText, !text.isEmpty else { return nil }
+
+        if let urlRange = text.range(of: #"https?://\S+"#, options: .regularExpression) {
+            text.removeSubrange(urlRange)
+        }
+        text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let prefix = "Check out "
+        if text.hasPrefix(prefix) {
+            text.removeFirst(prefix.count)
+        }
+        text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return text.isEmpty ? nil : text
     }
 
     /// Restores the last browsed region when one exists. Otherwise, if location is already

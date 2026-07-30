@@ -25,9 +25,9 @@ struct CandidateExtractorTests {
         let result = CandidateExtractor.extractSearchText(
             title: nil,
             text: nil,
-            url: URL(string: "https://www.yelp.com/biz/somewhere")
+            url: URL(string: "https://instagram.com/p/abc123")
         )
-        #expect(result == "yelp.com")
+        #expect(result == "instagram.com")
     }
 
     @Test func returnsNilWhenNothingUsableExists() {
@@ -84,6 +84,27 @@ struct CandidateExtractorTests {
             title: nil,
             text: nil,
             url: URL(string: "https://maps.app.goo.gl/xyz789")
+        )
+        #expect(result == nil)
+    }
+
+    /// Same reasoning as the Maps exclusions above: "yelp.to"/"yelp.com" isn't a place name,
+    /// and YelpLinkResolver gives Yelp links a real shot at the actual name via redirect
+    /// resolution instead — see MapScreen.handlePendingImport.
+    @Test func returnsNilForYelpShortLinkInsteadOfDomainText() {
+        let result = CandidateExtractor.extractSearchText(
+            title: nil,
+            text: nil,
+            url: URL(string: "https://yelp.to/abc123")
+        )
+        #expect(result == nil)
+    }
+
+    @Test func returnsNilForYelpBizURLInsteadOfDomainText() {
+        let result = CandidateExtractor.extractSearchText(
+            title: nil,
+            text: nil,
+            url: URL(string: "https://www.yelp.com/biz/somewhere")
         )
         #expect(result == nil)
     }
