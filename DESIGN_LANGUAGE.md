@@ -496,13 +496,26 @@ The user is replacing the objective identity while preserving personal meaning.
 
 ---
 
-# Open in Apple Maps
+# Open in Apple Maps / Google Maps
 
-When users need navigation or additional place information, PlacePick hands the Place back to Apple Maps.
+When users need navigation or additional place information, PlacePick hands the Place back
+to a maps provider — Apple Maps or Google Maps.
+
+The interface presents this as a single "Open in" confirmation, with the provider name as
+the choice:
+
+```text
+Open in
+
+Apple Maps
+Google Maps
+```
 
 Always use:
 
-> Open in Apple Maps
+> Open in
+> Apple Maps
+> Google Maps
 
 Avoid:
 
@@ -510,7 +523,9 @@ Avoid:
 - Get Directions
 - Open Maps
 
-The action emphasizes that navigation belongs to Apple Maps rather than PlacePick.
+The provider name alone is sufficient once "Open in" is already the dialog's title;
+repeating "Open in" on every button would be redundant. The action still emphasizes that
+navigation belongs to the maps provider rather than PlacePick.
 
 ---
 
@@ -676,7 +691,7 @@ Interface language should describe what users experience rather than how the sys
 Prefer:
 
 - Replace Place
-- Open in Apple Maps
+- Open in Apple Maps / Google Maps
 - Memory Photo
 
 Avoid implementation-oriented language such as:
@@ -724,7 +739,7 @@ The product should speak as though it is helping users remember meaningful Place
 | Note | Description, Comment |
 | Memory Photo | Cover Image, Gallery |
 | Replace Place | Edit Place, Change Address |
-| Open in Apple Maps | Navigate, Get Directions |
+| Open in Apple Maps / Google Maps | Navigate, Get Directions |
 | Current Location | My Position, Live Location |
 
 This table serves as the canonical vocabulary reference for the product.
