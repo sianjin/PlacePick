@@ -146,6 +146,7 @@ Shows:
 - Suggested photo grouping
 - Suggested nearby Places
 - User-confirmed Place resolution
+- Sharing (Place and Collection, via Share Extension / share sheet)
 
 ---
 
@@ -157,7 +158,6 @@ Shows:
 - Background photo scan
 - Story generation
 - Year Review
-- Sharing
 - Social features
 
 ---

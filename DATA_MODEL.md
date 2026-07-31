@@ -167,9 +167,9 @@ It means:
 The same Place may have different Emotions across different Visits:
 
 ```text
-Summer 2026     unforgettable
-Winter 2027     neutral
-Spring 2028     loved
+Summer 2026     amazed ("Unforgettable")
+Winter 2027     neutral ("Okay")
+Spring 2028     happy ("Loved it")
 ```
 
 ```text
@@ -195,7 +195,7 @@ Place
 ├── createdAt
 ├── modifiedAt
 ├── deletedAt
-├── collections
+├── collection
 └── visits
 ```
 
@@ -356,16 +356,16 @@ startedAt == endedAt
 ### `emotion`
 
 ```swift
-emotion: Emotion?
+emotion: PlaceEmotion?
 ```
 
-Allowed values:
+Allowed values (Swift case → display label):
 
 ```text
 nil
-neutral
-loved
-unforgettable
+neutral   → "Okay"
+happy     → "Loved it"
+amazed    → "Unforgettable"
 ```
 
 `nil` means no personal feeling has been recorded for this Visit.
@@ -900,12 +900,18 @@ Collection
 ├── id
 ├── name
 ├── icon
-├── sortOrder
-├── createdAt
+├── order
 ├── modifiedAt
-├── deletedAt
 └── places
 ```
+
+Unlike Place, Visit, and VisitPhoto, Collection has no `createdAt` or `deletedAt`. A
+Collection can only be deleted once it contains no Places: deleting a non-empty Collection
+requires the caller to supply a destination Collection, reassigns every member Place to it
+first, then hard-deletes the now-empty Collection's row outright. Because a Collection can
+never be removed while something still references it, there is no dangling-reference case
+to guard against, so no tombstone is needed — deletion just happens immediately and for
+real. See `CollectionRepository.delete(_:reassigningTo:)`.
 
 A Place may belong to one or more Collections according to `COLLECTIONS.md`.
 
