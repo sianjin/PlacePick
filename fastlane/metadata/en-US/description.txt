@@ -1,24 +1,24 @@
-Apple Maps already knows where a place is, what it's called, and how to get there.
+A place is a fact. What happened there is a memory. PlacePick is built for the memory.
 
-PlacePick remembers why it mattered — how it felt, what happened there, and the photos that prove it.
+TWO WAYS TO HOLD A MEMORY
+A memory has a place and a time, so PlacePick lets you find it either way.
+- Space-first: the Map shows your memories by where they happened.
+- Time-first: the Calendar shows your memories by when they happened, as a day-by-day journal.
+Neither view is the "extra" one. Some memories you'll reach for by place, some by date — PlacePick keeps both equally close.
 
-PLACES, NOT JUST PINS
-Save a place from Apple Maps and organize it into your own Collections — Coffee, Weekend Trips, Japan 2027, or however you actually think about your world. Not categories Apple Maps assigns you, but ones you choose.
+ONE PLACE, MANY MEMORIES
+The same coffee shop, three visits over two years, are three different memories — not one entry that gets overwritten. Each visit keeps its own photos, its own feeling, its own note, so a place's whole history is there when you open it.
 
-MEMORIES, BUILT FROM YOUR PHOTOS
-Pick a batch of photos and PlacePick groups them by time and location, suggests a place for each group, and lets you review everything — group boundaries, place, collection — in one screen before anything is saved. Nothing is created automatically. You always confirm.
+ONE DAY, MANY MEMORIES
+Tap a day on the Calendar and see everywhere you went, in order — a map with every stop pinned, and a card for each memory with its place, time, and photos, all on one page.
 
-BROWSE TWO WAYS
-- Map: browse your saved places by where they are.
-- Calendar: browse your memories by when they happened, as a day-by-day journal.
+A FEELING, NOT A SCORE
+PlacePick never asks "how many stars?" Each memory gets its own feeling instead, because the same place can be unforgettable once and ordinary the next time, and a rating can't hold both — a memory can.
 
-EMOTION OVER RATING
-PlacePick never asks "how many stars?" It asks how a place made you feel — because memories aren't reviews.
-
-SHARE WHAT MATTERS
-Send a place or a whole collection to another PlacePick user. Receiving one never overwrites what you've already saved — your organization always wins.
+EASY TO SAVE, EASY TO SHARE
+Saving the place itself is the easy part — share a link from Apple Maps, Google Maps, or Yelp, type a name, or let your photos suggest it, and organize it into Collections that make sense to you. Send a place or a whole collection to another PlacePick user just as easily. That's the infrastructure. The memory is the point.
 
 PRIVATE BY DESIGN
-Your places and memories sync across your own devices with iCloud. No account, no login, no social feed. Nothing you save is visible to anyone unless you explicitly share it.
+Your places and memories sync across your own devices with iCloud. No account, no login, no feed. Nothing you save is visible to anyone unless you explicitly share it — and sharing sends only the place, never your personal memories.
 
-PlacePick is a personal memory layer built on top of Apple Maps — not another map app, not a review platform, not a social network. Just a quieter way to remember the places that mattered.
+PlacePick isn't for finding places. It's for remembering what they meant.
