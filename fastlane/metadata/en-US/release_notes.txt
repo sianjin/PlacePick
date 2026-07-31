@@ -1,0 +1,1 @@
+Welcome to PlacePick — a personal memory layer built on top of Apple Maps.

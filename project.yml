@@ -38,8 +38,6 @@ targets:
         UILaunchScreen: {}
         NSLocationWhenInUseUsageDescription: "PlacePick uses your location to show where you are relative to the places you saved."
         NSPhotoLibraryUsageDescription: "PlacePick reads photo dates and locations to help group your photos into Memories."
-        UIBackgroundModes:
-          - remote-notification
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - placepick

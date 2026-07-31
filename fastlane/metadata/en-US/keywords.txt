@@ -1,0 +1,1 @@
+memory,map,travel,journal,places,diary,photos,collection,favorite,calendar,visit,personal map,trip log,memories
