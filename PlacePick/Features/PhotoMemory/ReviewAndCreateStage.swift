@@ -3,8 +3,8 @@ import SwiftData
 import MapKit
 import StoreKit
 
-/// Stage 4 (Review) and Stage 5 (Create). Nothing is saved until the user taps Create —
-/// see MEMORY_CREATION.md Stage 4/5. Each resolved group becomes one Visit; Places are
+/// Stage 3 (Review) and Stage 4 (Create). Nothing is saved until the user taps Create —
+/// see MEMORY_CREATION.md Stage 3/4. Each resolved group becomes one Visit; Places are
 /// created or matched to existing ones exactly like manual Capture (createPlace dedups by
 /// Apple Maps identifier, per DATA_MODEL.md §17.1). Place is chosen back in Stage 2
 /// (ReviewGroupsStage); Collection can still be corrected here, since realizing "wrong
@@ -106,7 +106,7 @@ struct ReviewAndCreateStage: View {
         }, message: { Text(errorMessage ?? "") })
     }
 
-    /// Stage 5 — Create. Reuses the same Place resolution and dedup rules as manual
+    /// Stage 4 — Create. Reuses the same Place resolution and dedup rules as manual
     /// Capture. Each group's own chosen Collection is used for its Place — createPlace
     /// only applies it when the Place is newly created; an existing matched Place keeps
     /// its current Collection untouched.

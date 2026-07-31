@@ -2,8 +2,8 @@ import Foundation
 import MapKit
 
 /// Suggests Apple Maps candidates near a PhotoImportGroup's approximate coordinate.
-/// See MEMORY_CREATION.md Stage 3 "Confirm Places" — this only proposes; the user always
-/// confirms or picks a different result. See DATA_MODEL.md §13: location metadata narrows
+/// See MEMORY_CREATION.md Stage 2 "Review Groups & Confirm Places" — this only proposes;
+/// the user always confirms or picks a different result. See DATA_MODEL.md §13: location metadata narrows
 /// the search, it never decides Place identity on its own.
 enum NearbyPlaceSearchService {
     // 200m was too tight for large landmarks (e.g. Times Square) whose registered POI

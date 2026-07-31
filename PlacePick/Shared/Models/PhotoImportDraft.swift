@@ -4,7 +4,7 @@ import SwiftData
 
 /// A candidate Photo pulled from the system library during Memory Creation, before any
 /// Visit exists. See DATA_MODEL.md §24.8 "Import Is Not Persistence" — this is not a
-/// VisitPhoto; nothing here is saved as a Visit until the user confirms Stage 5.
+/// VisitPhoto; nothing here is saved as a Visit until the user confirms Stage 4.
 /// PlacePick never copies the user's photo library — only the Photos-library asset
 /// identifier is kept; images are always looked up from Photos on demand.
 struct PhotoImportCandidate: Identifiable, Equatable {
@@ -21,7 +21,7 @@ struct PhotoImportGroup: Identifiable {
     enum Status {
         /// No Place chosen yet.
         case unresolved
-        /// User confirmed a real Apple Maps result — see MEMORY_CREATION.md Stage 3.
+        /// User confirmed a real Apple Maps result — see MEMORY_CREATION.md Stage 2.
         case resolved(MKMapItem)
         /// User chose not to create a Memory from this group.
         case skipped

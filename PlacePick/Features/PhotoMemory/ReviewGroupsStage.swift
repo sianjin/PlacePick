@@ -8,8 +8,8 @@ import PhotosUI
 /// shows its own photos, merge/split/remove controls, its place suggestion/search, AND its
 /// Collection together. Splitting these across screens meant the user lost sight of which
 /// photos/place a group had by the time they were asked to pick its Collection — showing
-/// everything together removes that disconnect entirely. See MEMORY_CREATION.md Stage 2/3
-/// and DATA_MODEL.md §12.3, §13.
+/// everything together removes that disconnect entirely. See MEMORY_CREATION.md Stage 2
+/// (which folded in the former separate Confirm Places stage) and DATA_MODEL.md §12.3, §13.
 struct ReviewGroupsStage: View {
     @Binding var draft: PhotoImportDraft
     let onContinue: () -> Void

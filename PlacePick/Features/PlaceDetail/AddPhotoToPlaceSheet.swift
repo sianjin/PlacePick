@@ -5,7 +5,7 @@ import SwiftData
 /// Adds photos to a known Place as a new Memory — no clustering or Place confirmation,
 /// since the Place is already fixed by where the user tapped Add Memory from. This is a
 /// separate, simpler entry point than PhotoMemoryScreen's multi-group flow (MEMORY_CREATION.md
-/// Stage 1–5), which exists for the "I don't know which photos go where yet" case.
+/// Stage 1–4), which exists for the "I don't know which photos go where yet" case.
 ///
 /// Always creates a fresh Visit (DATA_MODEL.md §20 — a Place may have many Memories, and
 /// Add Memory must be repeatable), never reuses an existing one.

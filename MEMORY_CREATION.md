@@ -92,6 +92,11 @@ No Memories are created at this stage.
 
 # Stage 2 — Review Groups & Confirm Places
 
+Originally split into a separate group-review screen and a separate place-confirmation
+screen (formerly Stage 3); merged into one screen so reviewing group boundaries,
+confirming a place, and choosing a Collection are decisions about the same group, not
+separate screens the user has to hold in their head across. See ReviewGroupsStage.swift.
+
 The system suggests groups that likely belong to the same visit. For each group, the
 user sees its photos, its suggested place, and its Collection together, in one place —
 reviewing group boundaries, confirming a place, and choosing a Collection are all
@@ -145,7 +150,7 @@ one Place and one Collection.
 
 ---
 
-# Stage 4 — Review
+# Stage 3 — Review
 
 The user reviews the Memories that will be created.
 
@@ -165,7 +170,7 @@ Nothing has been saved yet.
 
 ---
 
-# Stage 5 — Create
+# Stage 4 — Create
 
 After confirmation:
 
