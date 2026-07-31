@@ -1,1 +1,1 @@
-A personal memory layer built on top of Apple Maps — remember why places mattered, not just where they are.
+A place is a fact. What happened there is a memory. PlacePick keeps the memory — by place, by day, and by how it felt.
