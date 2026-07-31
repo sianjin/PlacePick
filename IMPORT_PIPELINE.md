@@ -364,6 +364,24 @@ Import should improve search quality without changing the user's intended meanin
 
 URLs should assist Candidate Resolution rather than bypass it.
 
+## Short Links
+
+Sharing from Apple Maps, Google Maps, or Yelp frequently produces a short link
+(`maps.apple.com/p/...`, `maps.app.goo.gl/...`, `yelp.to/...`) that carries no Place
+information in the URL itself — the name and coordinates exist only on the provider's own
+server, at the URL the short link redirects to.
+
+Resolving these follows the HTTP redirect (a `HEAD` request, reading only the response's
+final URL) to recover that real URL, then parses its query parameters or path — exactly
+like the already-supported long-form links, once resolved. This never downloads or scrapes
+a page body, matching the "Social Media URLs" restraint below.
+
+If redirect resolution fails or times out, the pipeline falls back to whatever weak
+text/title extraction is already available. It never falls back to raw domain text for a
+recognized Maps or Yelp host — a bare host name is never a usable Place name.
+
+---
+
 ## Apple Maps URLs
 
 Apple Maps links may already contain reliable Place information.
@@ -373,6 +391,10 @@ When available:
 - extract MapKit identifiers
 - extract coordinates
 - extract Place names
+
+Long-form links carry this in `q`/`ll` query parameters. Short links
+(`maps.apple.com/p/...`) carry nothing until resolved per "Short Links" above, after which
+they resolve to the same information under `name`/`coordinate` parameters instead.
 
 Even then:
 
@@ -388,6 +410,10 @@ Google Maps links may provide:
 - Coordinates
 - Query text
 
+Long-form links carry this in the `/maps/place/<name>/@<lat>,<lng>` path form or a `?q=`
+query form. Short links (`maps.app.goo.gl/...`, `goo.gl/maps/...`) carry nothing until
+resolved per "Short Links" above.
+
 These values become Candidate information for Apple Maps Search.
 
 The saved Place always uses Apple Maps identity.
@@ -398,7 +424,17 @@ The saved Place always uses Apple Maps identity.
 
 Yelp links may provide a Place name via the yelp.com/biz/&lt;slug&gt; URL slug.
 
-Yelp blocks automated page fetches, so only the URL itself is used — never page content.
+Yelp blocks automated page fetches (its own anti-bot protection returns an error for any
+page request), so only the URL itself is used — never page content. Yelp's share sheet
+produces a `yelp.to/...` short link whose own redirect chain does not reach yelp.com
+directly: on iOS it first lands on a deferred-deep-link page, which carries the real
+yelp.com/biz/&lt;slug&gt; URL inside its own redirect query parameter. That URL is read from
+the parameter, never by fetching the deep-link page's content.
+
+The business slug itself (typically "&lt;name&gt;-&lt;city&gt;") has no delimiter marking where the
+name ends — only a trailing numeric disambiguator is stripped, and dashes become spaces.
+This is a deliberately imperfect, editable search seed, the same tradeoff already accepted
+for Google's comma-truncated addresses above.
 
 These values become Candidate information for Apple Maps Search.
 
