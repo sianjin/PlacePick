@@ -28,3 +28,7 @@ PlacePickShareExtension/Info.plist
 # fastlane build/test artifacts (not source)
 fastlane/report.xml
 fastlane/test_output/
+
+# frameit inputs: raw pre-frame screenshots and copied system font (regenerate via `fastlane frameit`)
+fastlane/screenshots/originals/
+fastlane/screenshots/SFNS.ttf

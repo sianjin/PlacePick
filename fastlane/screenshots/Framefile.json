@@ -1,0 +1,37 @@
+{
+  "default": {
+    "title": {
+      "font": "./SFNS.ttf",
+      "color": "#1c1c1e"
+    },
+    "background": "./background_white.png",
+    "padding": 60,
+    "show_complete_frame": true
+  },
+  "data": [
+    {
+      "filter": "1_Map",
+      "title": {
+        "text": "Browse by place"
+      }
+    },
+    {
+      "filter": "2_Day",
+      "title": {
+        "text": "One day, every memory"
+      }
+    },
+    {
+      "filter": "3_Place",
+      "title": {
+        "text": "One place, many memories"
+      }
+    },
+    {
+      "filter": "4_Feeling",
+      "title": {
+        "text": "A feeling, not a score"
+      }
+    }
+  ]
+}
