@@ -1,6 +1,6 @@
 # PlacePick — Editor's Choice Improvement Plan
 
-Status: In progress — steps 2–4 shipped on `feature/editors-choice-ui`; step 5 effectively folded into step 2; steps 1 and 6 not started
+Status: In progress — steps 2–4 shipped on `feature/editors-choice-ui`; step 5 effectively folded into step 2; step 1 dropped (see note); step 6 not started
 Date: 2026-08-01, updated 2026-08-07
 
 ---
@@ -22,8 +22,8 @@ The `EmotionPicker` — the headline differentiator ("a feeling, not a score") �
 
 ## Plan
 
-**1. Minimal design system** (`Theme.swift` or similar)
-Small set of constants: 2–3 accent colors (could build on the emotion concept — warm tone for "amazed," neutral gray for "neutral"), one corner-radius scale (e.g. 12/16/20), one shadow style. Every other change below depends on this existing first.
+**1. Minimal design system — DROPPED, not needed**
+Originally scoped as a prerequisite for everything else. In practice, steps 2–4 shipped without it, and the two small constant files that emerged along the way (`CardStyle.swift`, `PlaceEmotion+Style.swift`) already cover the actual cross-screen consistency needed — no `Theme.swift` or broader token system currently justified. Revisit only if a future surface needs shared styling that doesn't fit either existing file.
 
 **2. Redesign `EmotionPicker` — SHIPPED** (`PersonalInfoForm.swift`, `PlaceEmotion+Style.swift`)
 Selected emotion gets a colored ring (`PlaceEmotion.tintColor` — promoted out of `CalendarScreen.swift` into its own shared extension file so the emotion picker and the calendar's day-cell rings use identical colors) plus a spring scale-up (1.0 → 1.12, `response: 0.35, dampingFraction: 0.6`), and a light haptic tap via the existing `Haptics.selection()` helper. Unselected options still dim to 40% opacity once something is picked. Self-contained change to `EmotionPicker` in `PersonalInfoForm.swift`; `MemoryDetailScreen.swift` gets it for free since both use the same component.
@@ -48,12 +48,30 @@ Note: this project uses XcodeGen (`project.yml`) — any new Swift file needs `x
 The emotion-picker spring + haptic (step 2) is this moment; the `matchedGeometryEffect` map-pin-to-detail-sheet transition remains an option but is on hold — revisit only if the app still feels flat after seeing 1–4 together in context.
 
 **6. Reshoot App Store screenshots**
-Not started. After step 1 (if pursued), with real data. Add a Collections/sharing screenshot to show product range beyond map/list/detail. The photo-first calendar (step 4) and the restyled cards (step 3) are strong new "designed moment" screenshot candidates.
+Not started. Deliberately held until v1.0 clears App Review — will use a TestFlight build with real production data (this session's local dev builds run against CloudKit's Development database, not the same data as production). Add a Collections/sharing screenshot to show product range beyond map/list/detail. The photo-first calendar (step 4) and the restyled cards (step 3) are strong new "designed moment" screenshot candidates.
+
+**7. Place Detail revisit-history polish — SHIPPED** (`PlaceDetailSheet.swift`)
+Added after studying Apple Journal (see Competitive positioning below) — Place Detail is the screen that proves "one place, many memories," a claim Journal's chronological-stream structure cannot replicate, so it deserved to look considered:
+- Section heading changed from a bare "Memories" to "N Memories" — the visit count is the actual point of this screen and was previously invisible unless you scrolled and counted rows yourself.
+- Each `MemoryRow`'s photo thumbnail now gets the same emotion-tint ring as the Calendar's day cells and `EmotionPicker`'s selected state (`PlaceEmotion.tintColor`), instead of a tiny inline emoji easy to miss — a visit's feeling now reads consistently everywhere it appears.
 
 ## Sequencing
 
-~~Theme file~~ → EmotionPicker rewrite (2) → photo-first calendar (4) → card styling (3, using constants pulled out ad hoc rather than a separate upfront theme file) → remaining: step 1 (now optional/low-priority — two features shipped without it) and step 6 (reshoot screenshots).
+~~Theme file~~ → EmotionPicker rewrite (2) → photo-first calendar (4) → card styling (3, using constants pulled out ad hoc rather than a separate upfront theme file) → Place Detail revisit-history polish (7) → remaining: step 6 (reshoot screenshots, blocked on v1.0 App Review).
+
+## Competitive positioning (Apple Journal, studied 2026-08-07)
+
+Apple Journal is visually more polished than Day One (gradient hero cards, native photo-collage stacking, on-device ML auto-titling, video support) — worth studying for craft, **not worth copying structurally**. Journal's information architecture is chronological-stream-first: every entry (a walk, a meal, a flight) sits in one undifferentiated timeline grouped by day. Its "Places" summary is just a count of unique pins — Places is metadata about the journal, not a way to browse it. There is no view in Journal showing "every time I've been to this specific place."
+
+That gap is exactly PlacePick's structural bet (a Place is a persistent entity accumulating Visits over time; the Calendar is one lens onto that, not the primary structure) and is the concrete difference to lean into rather than blur:
+
+- **Revisit history at a Place** (step 7 above) — Journal has no equivalent; you'd have to search and manually assemble it.
+- **Structured per-visit Emotion**, not freeform prose — aggregable (the Calendar's dominant-emotion ring depends on this), unlike Journal's plain text.
+- **Place names from Apple Maps**, not ML-guessed titles ("A day to Santa Cruz," "Evening outing near The Kitchen") — accurate, not inferred.
+
+Explicitly decided **not** to chase: Journal's photo-collage/stacking layout (that's chronological-stream language; the Calendar's photo-first day cell already does the equivalent "what happened that day" job) and gradient hero cards (reads as "Apple system app," not differentiated if copied). Video support is a real capability gap worth a separate look, but the reason to add it should be "existing Memories deserve video too," not "match Journal's feature list" — not yet investigated.
 
 ## Reference apps
 
-- **Day One** — studied for month-grid calendar (photo-first day cells vs. plain dots). Source: user-provided screenshot, 2026-08-06.
+- **Day One** — studied for month-grid calendar (photo-first day cells vs. plain dots). Source: user-provided screenshots, 2026-08-06.
+- **Apple Journal** — studied for visual craft and, more importantly, as a foil for PlacePick's Place-centric (vs. chronological-stream) structure. Source: user-provided screenshots, 2026-08-07.
