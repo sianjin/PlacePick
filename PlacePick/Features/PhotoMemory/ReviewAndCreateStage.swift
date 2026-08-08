@@ -141,7 +141,7 @@ struct ReviewAndCreateStage: View {
                 modelContext.insert(visit)
 
                 for (index, photo) in group.photos.enumerated() {
-                    // storedImageReference mirrors localAssetIdentifier: PlacePick never
+                    // storedImageReference mirrors localAssetIdentifier: MomentMap never
                     // copies photo bytes into its own storage, so there is no separate
                     // managed file to reference — display always looks up the asset from
                     // Photos directly (see PhotoAssetThumbnailView).

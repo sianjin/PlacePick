@@ -161,7 +161,14 @@ struct PlaceDetailSheet: View {
     private var memoriesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Memories")
+                // "N Memories" rather than a bare "Memories" heading — this count is the
+                // whole point of Place Detail (one Place accumulating many Visits over
+                // time), a structural difference from Day One/Apple Journal's flat
+                // chronological stream, where no single screen shows how many times
+                // you've returned somewhere. Making the count visible at a glance, not
+                // something you have to scroll and tally yourself, is the concrete
+                // payoff of that difference.
+                Text(visits.isEmpty ? "Memories" : "\(visits.count) \(visits.count == 1 ? "Memory" : "Memories")")
                     .font(.headline)
                 Spacer()
                 Button {
@@ -235,9 +242,20 @@ private struct MemoryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // Same emotion-tint ring language as the Calendar's day cells and
+            // EmotionPicker's selected state — a visit's feeling should read consistently
+            // wherever it appears, and MomentMap's per-visit Emotion (vs. Day One/Apple
+            // Journal's plain freeform text) is a real structural difference worth making
+            // visible here too, not just a tiny inline glyph next to the note.
             PhotoAssetThumbnailView(localAssetIdentifier: coverPhoto?.localAssetIdentifier, fallbackIcon: fallbackIcon)
                 .frame(width: 56, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(RoundedRectangle(cornerRadius: CardStyle.innerCornerRadius))
+                .overlay {
+                    if let emotion = visit.emotion {
+                        RoundedRectangle(cornerRadius: CardStyle.innerCornerRadius)
+                            .strokeBorder(emotion.tintColor, lineWidth: 2)
+                    }
+                }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(visit.startedAt, format: .dateTime.month(.abbreviated).day().year())
@@ -263,6 +281,10 @@ private struct MemoryRow: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
+        .padding(10)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: CardStyle.outerCornerRadius))
+        .shadow(color: CardStyle.shadowColor, radius: CardStyle.shadowRadius, y: CardStyle.shadowYOffset)
     }
 }
 

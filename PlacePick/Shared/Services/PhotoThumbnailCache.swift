@@ -1,6 +1,6 @@
 import UIKit
 
-/// Bounded in-memory cache for Photos-library thumbnails. PlacePick never stores a
+/// Bounded in-memory cache for Photos-library thumbnails. MomentMap never stores a
 /// permanent copy of the user's photo library — this exists purely to avoid re-fetching
 /// from Photos on every scroll/re-render. NSCache evicts under memory pressure
 /// automatically, so this can never grow unbounded or "explode" the app's memory.

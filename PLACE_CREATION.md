@@ -1,4 +1,4 @@
-# PlacePick — PLACE_CREATION.md
+# MomentMap — PLACE_CREATION.md
 
 Version: 5.0
 
@@ -131,7 +131,7 @@ Users may search using:
 
 Search results come directly from MapKit.
 
-PlacePick never maintains its own Place database or search index.
+MomentMap never maintains its own Place database or search index.
 
 Apple Maps remains the single source of truth for Place identity.
 
@@ -165,7 +165,7 @@ No user relationship has been recorded.
 
 # Duplicate Detection
 
-Before continuing to relationship capture, PlacePick checks whether the selected Apple Maps identity already exists.
+Before continuing to relationship capture, MomentMap checks whether the selected Apple Maps identity already exists.
 
 Useful signals include:
 
@@ -212,7 +212,7 @@ Place creation begins by establishing a verified Apple Maps identity.
 
 Apple Maps defines what the Place is.
 
-PlacePick does not duplicate or modify this information.
+MomentMap does not duplicate or modify this information.
 
 Only after identity has been verified can the user begin creating a Personal Relationship with the Place.
 

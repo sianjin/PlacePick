@@ -5,7 +5,7 @@ import SwiftData
 /// A candidate Photo pulled from the system library during Memory Creation, before any
 /// Visit exists. See DATA_MODEL.md §24.8 "Import Is Not Persistence" — this is not a
 /// VisitPhoto; nothing here is saved as a Visit until the user confirms Stage 4.
-/// PlacePick never copies the user's photo library — only the Photos-library asset
+/// MomentMap never copies the user's photo library — only the Photos-library asset
 /// identifier is kept; images are always looked up from Photos on demand.
 struct PhotoImportCandidate: Identifiable, Equatable {
     let id: String

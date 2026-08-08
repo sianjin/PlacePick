@@ -1,4 +1,4 @@
-# PlacePick — DESIGN_LANGUAGE.md
+# MomentMap — DESIGN_LANGUAGE.md
 
 Version: 5.0
 
@@ -8,7 +8,7 @@ Status: Product Language Guide
 
 # Purpose
 
-This document defines the language used throughout PlacePick.
+This document defines the language used throughout MomentMap.
 
 Language is part of the product design.
 
@@ -28,7 +28,7 @@ This document defines those rules.
 
 # Relationship to Other Documents
 
-This document defines **how PlacePick communicates**.
+This document defines **how MomentMap communicates**.
 
 Other documents describe the product from different perspectives.
 
@@ -63,7 +63,7 @@ Its purpose is to ensure that every screen speaks with one consistent voice.
 
 # Language Philosophy
 
-The language of PlacePick should make the product feel like a personal map rather than a place database.
+The language of MomentMap should make the product feel like a personal map rather than a place database.
 
 Users are not managing records.
 
@@ -115,7 +115,7 @@ The product should speak the same language.
 
 # Principle 2 — Use Personal Language
 
-PlacePick is about personal memory.
+MomentMap is about personal memory.
 
 Its language should therefore feel personal rather than administrative.
 
@@ -160,7 +160,7 @@ Consistency reduces cognitive load and makes the product easier to learn.
 
 # Tone
 
-The overall tone of PlacePick should feel:
+The overall tone of MomentMap should feel:
 
 - Personal
 - Calm
@@ -207,7 +207,7 @@ Language is part of the product architecture.
 
 Every concept should have one stable name, one clear meaning, and one consistent usage.
 
-The language of PlacePick should always reinforce the same idea:
+The language of MomentMap should always reinforce the same idea:
 
 > This is your personal map—not a database of places.
 
@@ -215,7 +215,7 @@ The language of PlacePick should always reinforce the same idea:
 
 # Core Product Vocabulary
 
-The following terms define the core concepts of PlacePick.
+The following terms define the core concepts of MomentMap.
 
 These concepts appear consistently throughout the product, documentation, and future features.
 
@@ -383,7 +383,7 @@ The photo represents a memory rather than an illustration.
 
 The Personal Map represents the user's own collection of meaningful Places.
 
-It is the central concept of PlacePick.
+It is the central concept of MomentMap.
 
 The Personal Map is not:
 
@@ -399,7 +399,7 @@ Whenever possible, interface language should reinforce this concept.
 
 # Part 2 Summary
 
-The vocabulary of PlacePick reflects its conceptual model.
+The vocabulary of MomentMap reflects its conceptual model.
 
 Places represent the real world.
 
@@ -413,7 +413,7 @@ Together, these concepts form the user's Personal Map.
 
 # Interaction Language
 
-Interaction language describes how PlacePick communicates with users during everyday use.
+Interaction language describes how MomentMap communicates with users during everyday use.
 
 Unlike the Core Product Vocabulary, these terms describe actions and interface elements rather than product concepts.
 
@@ -498,7 +498,7 @@ The user is replacing the objective identity while preserving personal meaning.
 
 # Open in Apple Maps / Google Maps
 
-When users need navigation or additional place information, PlacePick hands the Place back
+When users need navigation or additional place information, MomentMap hands the Place back
 to a maps provider — Apple Maps or Google Maps.
 
 The interface presents this as a single "Open in" confirmation, with the provider name as
@@ -525,7 +525,7 @@ Avoid:
 
 The provider name alone is sufficient once "Open in" is already the dialog's title;
 repeating "Open in" on every button would be redundant. The action still emphasizes that
-navigation belongs to the maps provider rather than PlacePick.
+navigation belongs to the maps provider rather than MomentMap.
 
 ---
 
@@ -617,7 +617,7 @@ Every label, button, and message should reinforce the feeling that users are bui
 
 # Consistency
 
-The language of PlacePick should remain consistent as the product evolves.
+The language of MomentMap should remain consistent as the product evolves.
 
 New features should extend the existing language rather than introducing new terminology unnecessarily.
 
@@ -750,11 +750,11 @@ Future terminology should remain compatible with these conventions.
 
 # Final Principle
 
-Every word in PlacePick should reinforce the same mental model.
+Every word in MomentMap should reinforce the same mental model.
 
 Apple Maps describes the world.
 
-PlacePick describes the user's relationship with the world.
+MomentMap describes the user's relationship with the world.
 
 The language should therefore feel:
 

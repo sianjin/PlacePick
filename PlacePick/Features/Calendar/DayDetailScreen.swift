@@ -190,7 +190,7 @@ private struct DaySnapshotContent: View {
 
 /// Spatial summary of one day's Memories — DATA_MODEL.md §19.4 Daily Travel Log ("render
 /// map, Photos, Emotions, and Notes"). Deliberately shows independent pins with no
-/// connecting route: PlacePick only knows where Photos were taken, not how the user
+/// connecting route: MomentMap only knows where Photos were taken, not how the user
 /// traveled between them, and a drawn route would assert a journey the data can't support
 /// (e.g. missed/unimported photos would silently produce a wrong or incomplete path).
 private struct DayMap: View {
@@ -284,7 +284,7 @@ private struct DayMapPin: View {
     }
 }
 
-/// The fundamental building block of PlacePick, per DAY_DETAIL.md — same card used in
+/// The fundamental building block of MomentMap, per DAY_DETAIL.md — same card used in
 /// Day Detail and (eventually) other Memory-listing surfaces.
 struct MemoryCard: View {
     let visit: Visit
@@ -308,11 +308,11 @@ struct MemoryCard: View {
                     .aspectRatio(contentMode: .fill)
                     .frame(height: 180)
                     .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: CardStyle.innerCornerRadius))
             } else {
                 PhotoAssetThumbnailView(localAssetIdentifier: coverPhotoIdentifier, fallbackIcon: visit.place?.displayIcon ?? "mappin.circle")
                     .frame(height: 180)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: CardStyle.innerCornerRadius))
             }
 
             Text(visit.place?.name ?? "")
@@ -343,6 +343,10 @@ struct MemoryCard: View {
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: CardStyle.outerCornerRadius))
+        .shadow(color: CardStyle.shadowColor, radius: CardStyle.shadowRadius, y: CardStyle.shadowYOffset)
         .task(id: visit.place?.id) {
             guard let place = visit.place else { return }
             placeTimeZone = PlaceTimeZoneResolver.cached(for: place.coordinate)

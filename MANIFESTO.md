@@ -1,4 +1,4 @@
-# PlacePick — MANIFESTO.md
+# MomentMap — MANIFESTO.md
 
 Version: 5.0
 
@@ -8,11 +8,11 @@ Version: 5.0
 
 Apple Maps helps me get there.
 
-**PlacePick reminds me why it mattered.**
+**MomentMap reminds me why it mattered.**
 
 ---
 
-# Why PlacePick Exists
+# Why MomentMap Exists
 
 The world does not need another map application.
 
@@ -24,7 +24,7 @@ Apple Maps and Google Maps already solve:
 - addresses
 - business information
 
-PlacePick exists to solve something they never can.
+MomentMap exists to solve something they never can.
 
 > **Personal meaning.**
 
@@ -32,7 +32,7 @@ Not where a Place is.
 
 But why it matters.
 
-PlacePick is a personal memory layer built on top of Apple Maps.
+MomentMap is a personal memory layer built on top of Apple Maps.
 
 ---
 
@@ -48,19 +48,19 @@ It knows:
 - what it is called
 - how to get there
 
-PlacePick should never compete with that knowledge.
+MomentMap should never compete with that knowledge.
 
 Instead, it should build upon it.
 
 ---
 
-## PlacePick Owns Personal Meaning
+## MomentMap Owns Personal Meaning
 
 A Place is more than a coordinate.
 
 It becomes meaningful because of the user's own experiences.
 
-PlacePick remembers:
+MomentMap remembers:
 
 - why a Place was saved
 - how it felt
@@ -72,7 +72,7 @@ Those memories belong to the user.
 
 ## Ask Only What the World Cannot Answer
 
-Whenever the world already knows the answer, PlacePick should not ask again.
+Whenever the world already knows the answer, MomentMap should not ask again.
 
 Apple Maps already knows:
 
@@ -81,7 +81,7 @@ Apple Maps already knows:
 - coordinates
 - business information
 
-PlacePick asks only what Apple Maps never can.
+MomentMap asks only what Apple Maps never can.
 
 > Why did this Place matter to you?
 
@@ -109,7 +109,7 @@ Not evaluation.
 
 ## The Map Is the Product
 
-The Personal Map is the heart of PlacePick.
+The Personal Map is the heart of MomentMap.
 
 Everything begins there.
 
@@ -123,7 +123,7 @@ It is the product itself.
 
 ## Two Ways to Browse, Two Ways to Capture
 
-PlacePick is built around two equally important dimensions of memory.
+MomentMap is built around two equally important dimensions of memory.
 
 **Browse**
 
@@ -144,7 +144,7 @@ The product is intentionally organized around these four core interactions:
 | **Place** | Map | New Place |
 | **Memory** | Calendar | Photo Memory |
 
-Everything else in PlacePick is built on top of this structure.
+Everything else in MomentMap is built on top of this structure.
 
 ---
 
@@ -156,7 +156,7 @@ Every screen adds complexity.
 
 Every new concept asks users to learn something new.
 
-PlacePick grows by becoming deeper, not larger.
+MomentMap grows by becoming deeper, not larger.
 
 When in doubt:
 
@@ -166,7 +166,7 @@ Choose the simpler product.
 
 # What We Choose Not To Be
 
-PlacePick is not:
+MomentMap is not:
 
 - another navigation app
 - another review platform
@@ -174,7 +174,7 @@ PlacePick is not:
 - another social network
 - another AI itinerary generator
 
-If another product already solves a problem well, PlacePick should not solve it again.
+If another product already solves a problem well, MomentMap should not solve it again.
 
 Our responsibility is intentionally small.
 
@@ -186,4 +186,4 @@ That is our strength.
 
 Apple Maps helps people find Places.
 
-**PlacePick helps people remember why they mattered.**
+**MomentMap helps people remember why they mattered.**

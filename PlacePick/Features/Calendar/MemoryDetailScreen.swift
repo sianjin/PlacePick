@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 import PhotosUI
 
-/// The heart of PlacePick — every browsing path eventually leads here. See
+/// The heart of MomentMap — every browsing path eventually leads here. See
 /// MEMORY_DETAIL.md: photos first, then place, emotion, note, and time, following the
 /// natural order of human recall rather than storage order.
 struct MemoryDetailScreen: View {
@@ -224,7 +224,7 @@ struct MemoryDetailScreen: View {
 
         let candidates = await PhotoLibraryService.loadCandidates(for: items)
         guard !candidates.isEmpty else {
-            addPhotosErrorMessage = "PlacePick couldn't read the date for the selected photos. Photos need capture-date metadata (most camera photos have this; some screenshots or edited images may not)."
+            addPhotosErrorMessage = "MomentMap couldn't read the date for the selected photos. Photos need capture-date metadata (most camera photos have this; some screenshots or edited images may not)."
             return
         }
 

@@ -31,7 +31,7 @@ struct AddPhotoToPlaceSheet: View {
                     ContentUnavailableView(
                         "Photo Access Needed",
                         systemImage: "photo.on.rectangle.angled",
-                        description: Text("Allow full Photos access in Settings so PlacePick can read photo dates and locations.")
+                        description: Text("Allow full Photos access in Settings so MomentMap can read photo dates and locations.")
                     )
                 } else {
                     ContentUnavailableView(
@@ -102,7 +102,7 @@ struct AddPhotoToPlaceSheet: View {
 
         let candidates = await PhotoLibraryService.loadCandidates(for: items)
         guard !candidates.isEmpty else {
-            loadErrorMessage = "PlacePick couldn't read the date for the selected photos. Photos need capture-date metadata (most camera photos have this; some screenshots or edited images may not)."
+            loadErrorMessage = "MomentMap couldn't read the date for the selected photos. Photos need capture-date metadata (most camera photos have this; some screenshots or edited images may not)."
             return
         }
 

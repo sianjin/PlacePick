@@ -21,8 +21,8 @@ targets:
         SWIFT_VERSION: "6.0"
         ENABLE_PREVIEWS: true
         INFOPLIST_KEY_UILaunchScreen_Generation: true
-        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "PlacePick uses your location to show where you are relative to the places you saved."
-        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "PlacePick reads photo dates and locations to help group your photos into Memories."
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "MomentMap uses your location to show where you are relative to the places you saved."
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "MomentMap reads photo dates and locations to help group your photos into Memories."
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_ENTITLEMENTS: PlacePick/PlacePick.entitlements
         CODE_SIGN_STYLE: Automatic
@@ -35,9 +35,11 @@ targets:
     info:
       path: PlacePick/Info.plist
       properties:
+        CFBundleDisplayName: MomentMap
         UILaunchScreen: {}
-        NSLocationWhenInUseUsageDescription: "PlacePick uses your location to show where you are relative to the places you saved."
-        NSPhotoLibraryUsageDescription: "PlacePick reads photo dates and locations to help group your photos into Memories."
+        ITSAppUsesNonExemptEncryption: false
+        NSLocationWhenInUseUsageDescription: "MomentMap uses your location to show where you are relative to the places you saved."
+        NSPhotoLibraryUsageDescription: "MomentMap reads photo dates and locations to help group your photos into Memories."
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - placepick
@@ -87,7 +89,7 @@ targets:
     info:
       path: PlacePickShareExtension/Info.plist
       properties:
-        CFBundleDisplayName: PlacePick
+        CFBundleDisplayName: MomentMap
         UTImportedTypeDeclarations:
           - UTTypeIdentifier: com.sianjin.PlacePick.collection-snapshot
             UTTypeDescription: PlacePick Collection

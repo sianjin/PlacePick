@@ -9,6 +9,14 @@ struct YearMonthPickerScreen: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var displayedYear: Int
+    /// Measured via yearHeader's own background GeometryReader — used to size the
+    /// swipeable region below the header to fill the rest of the screen, same pattern as
+    /// CalendarScreen.monthHeaderHeight.
+    @State private var yearHeaderHeight: CGFloat = 56
+    /// The LazyVGrid's own measured height, via its background GeometryReader — used
+    /// together with yearHeaderHeight to size the trailing blank-space swipe region,
+    /// same pattern as CalendarScreen.gridContentHeight.
+    @State private var gridContentHeight: CGFloat = 0
 
     private let calendar = Calendar.current
 
@@ -29,17 +37,53 @@ struct YearMonthPickerScreen: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                yearHeader
+            GeometryReader { screenProxy in
+                VStack(spacing: 0) {
+                    yearHeader
+                        .background {
+                            GeometryReader { proxy in
+                                Color.clear.onAppear { yearHeaderHeight = proxy.size.height }
+                                    .onChange(of: proxy.size.height) { _, newHeight in yearHeaderHeight = newHeight }
+                            }
+                        }
 
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 16) {
-                    ForEach(1...12, id: \.self) { month in
-                        monthCell(month)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 16) {
+                        ForEach(1...12, id: \.self) { month in
+                            monthCell(month)
+                        }
                     }
-                }
-                .padding()
+                    .padding()
+                    .background {
+                        GeometryReader { proxy in
+                            Color.clear.onAppear { gridContentHeight = proxy.size.height }
+                                .onChange(of: proxy.size.height) { _, newHeight in gridContentHeight = newHeight }
+                        }
+                    }
 
-                Spacer()
+                    // Matches CalendarScreen's own swipe-to-navigate gesture — here a
+                    // horizontal swipe moves a year at a time, the same as tapping the
+                    // chevrons in yearHeader.
+                    //
+                    // This sits in the blank space *below* the LazyVGrid, not on top of
+                    // it: overlaying the grid itself was tried (with a
+                    // UIGestureRecognizerDelegate declaring simultaneous recognition, and
+                    // separately with cancelsTouchesInView = false) and still ended up
+                    // blocking taps on the month-cell Buttons underneath on device — see
+                    // HorizontalSwipeRecognizerView's own doc comment. A month cell is
+                    // therefore tap-only; swipe works from this trailing blank region,
+                    // sized to fill the rest of the screen below the grid using
+                    // gridContentHeight and yearHeaderHeight, both real measurements
+                    // rather than guessed constants.
+                    Color.clear
+                        .frame(minHeight: max(0, screenProxy.size.height - yearHeaderHeight - gridContentHeight))
+                        .overlay {
+                            HorizontalSwipeRecognizerView { leftward in
+                                withAnimation {
+                                    displayedYear += leftward ? 1 : -1
+                                }
+                            }
+                        }
+                }
             }
             .navigationTitle("Choose a Month")
             .navigationBarTitleDisplayMode(.inline)

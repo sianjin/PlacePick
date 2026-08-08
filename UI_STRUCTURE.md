@@ -1,4 +1,4 @@
-# PlacePick — UI_STRUCTURE
+# MomentMap — UI_STRUCTURE
 
 Version: 6.0
 
@@ -6,7 +6,7 @@ Version: 6.0
 
 # Purpose
 
-This document defines how users navigate and interact with PlacePick.
+This document defines how users navigate and interact with MomentMap.
 
 It focuses on interface structure and interaction flow.
 Product philosophy, data model, and implementation details are defined in their respective documents.
@@ -15,7 +15,7 @@ Product philosophy, data model, and implementation details are defined in their 
 
 # Information Architecture
 
-PlacePick is built around two equally important ways of browsing memories.
+MomentMap is built around two equally important ways of browsing memories.
 
 ## Browse
 
@@ -41,7 +41,7 @@ PlacePick is built around two equally important ways of browsing memories.
      New Place    Photo Memory
 ```
 
-Everything else in PlacePick is built on these four interactions.
+Everything else in MomentMap is built on these four interactions.
 
 ---
 
@@ -141,7 +141,7 @@ The user confirms.
 # Core Interaction Principles
 
 - Apple Maps owns geography.
-- PlacePick owns personal memories.
+- MomentMap owns personal memories.
 - One interaction edits one concept.
 - The system suggests.
 - The user confirms.

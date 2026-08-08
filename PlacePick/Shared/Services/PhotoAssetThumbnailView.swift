@@ -3,7 +3,7 @@ import Photos
 
 /// Resolves a Photos-library asset identifier to a thumbnail, via PHImageManager, backed
 /// by a small bounded cache (PhotoThumbnailCache) for scroll performance. Never stores a
-/// permanent copy — PlacePick is a personal memory layer over the user's own Photos
+/// permanent copy — MomentMap is a personal memory layer over the user's own Photos
 /// library, not a photo container. Falls back to a neutral icon when the identifier is
 /// missing or the asset can no longer be resolved (e.g. deleted from Photos).
 struct PhotoAssetThumbnailView: View {
@@ -18,6 +18,11 @@ struct PhotoAssetThumbnailView: View {
                 Image(uiImage: thumbnail)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
+                    // Without an explicit frame here, a resizable Image inside a ZStack
+                    // sizes itself from the source photo's own aspect ratio instead of
+                    // filling whatever frame the caller imposes from outside — landscape
+                    // vs. portrait source photos would render at different cell widths.
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Rectangle().fill(Color(.secondarySystemBackground))
                 Image(systemName: fallbackIcon)

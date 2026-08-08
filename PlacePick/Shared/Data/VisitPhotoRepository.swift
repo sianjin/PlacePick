@@ -21,7 +21,7 @@ final class VisitPhotoRepository {
     /// Attaches PhotoImportCandidates to a Visit as VisitPhotos, then recomputes the
     /// Visit's startedAt/endedAt from every attached Photo's actual capture time — see
     /// DATA_MODEL.md §7.2: "the earliest/latest reliable capture time among the Visit's
-    /// Photos," never when the user happened to attach them in PlacePick.
+    /// Photos," never when the user happened to attach them in MomentMap.
     @discardableResult
     func attach(_ candidates: [PhotoImportCandidate], to visit: Visit) -> [VisitPhoto] {
         let existingCount = fetchPhotos(for: visit).count
