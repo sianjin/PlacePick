@@ -224,7 +224,7 @@ struct MemoryDetailScreen: View {
 
         let candidates = await PhotoLibraryService.loadCandidates(for: items)
         guard !candidates.isEmpty else {
-            addPhotosErrorMessage = "PlacePick couldn't read the date for the selected photos. Photos need capture-date metadata (most camera photos have this; some screenshots or edited images may not)."
+            addPhotosErrorMessage = "MomentMap couldn't read the date for the selected photos. Photos need capture-date metadata (most camera photos have this; some screenshots or edited images may not)."
             return
         }
 
