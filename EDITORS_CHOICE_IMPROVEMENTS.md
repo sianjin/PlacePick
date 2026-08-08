@@ -1,7 +1,7 @@
 # PlacePick — Editor's Choice Improvement Plan
 
-Status: Proposal, not started
-Date: 2026-08-01
+Status: In progress — step 4 (photo-first calendar) shipped on `feature/editors-choice-ui`, steps 1–3 and 5–6 not started
+Date: 2026-08-01, updated 2026-08-07
 
 ---
 
@@ -31,16 +31,18 @@ Replace bare `Text(emoji)` with circular backgrounds sized to `.title` emoji, a 
 **3. Card treatment for `MemoryCard` / `PlaceDetailSheet` / `MemoryRow`**
 Background fill, corner radius from theme constants, subtle shadow. Small diffs, benefits every screenshot at once.
 
-**4. Photo-first calendar month view**
-Reference: Day One's month grid shows a photo thumbnail in each day cell that has an entry, instead of a plain dot. Adapted (not copied) for PlacePick:
+**4. Photo-first calendar month view — SHIPPED** (`feature/editors-choice-ui`, `CalendarScreen.swift` / `YearMonthPickerScreen.swift` / `HorizontalSwipeRecognizerView.swift`)
+Reference: Day One's month grid shows a photo thumbnail in each day cell that has an entry, instead of a plain dot. Adapted (not copied) for PlacePick — final shipped design diverges from the original proposal in a few places, noted below.
 
-- `CalendarScreen.swift:103-125` (`dayCell`) currently renders `Text(day)` + a 5×5 accent dot when `hasVisits`. When the day's representative Visit has a photo, replace the dot with a photo thumbnail using the existing `PhotoAssetThumbnailView` / `PhotoAssetLoader` pipeline (already used for cover photos in `DayDetailScreen.swift:300,313`) — no new photo infra needed.
-- **A photo is not guaranteed.** Confirmed in code: `Visit.photos` is optional and defaults to empty (`Shared/Models/Visit.swift:44`), and the `PersonalInfoForm`/`AddPlaceScreen` creation flow has no photo step at all — only Collection is required to save. So photo-less visit days are a real, common case, not an edge case: those cells keep today's number-+-dot treatment, they don't get a placeholder image.
-- `daysWithVisits` (lines 16-18) currently collapses to a bare `Set<Date>`, discarding the `Visit` objects; needs to instead map each day to its representative `Visit`(s) — photo (if any), count, and dominant emotion — mirroring `DayDetailScreen`'s existing `coverPhotoIdentifier` logic.
-- **Count badge**: small overlay badge (top-right or bottom-right corner of the cell, iOS-native badge style) showing the memory count, shown only when a day has more than one Visit. Sits on top of the photo fill (or the plain-number cell, if no photo) — independent of whether the cell has a photo, so no coexistence conflict.
-- **Feeling tint, using dominant emotion** (the most frequent `PlaceEmotion` among that day's visits, not last-logged — last-logged is arbitrary when a day has multiple memories and doesn't reflect what the day was actually like). Rendered as a thin accent ring traced around the cell edge.
-- **Ring conflict, resolved**: feeling-tint and "today" both initially wanted a ring around the cell — they can't share it. Feeling-tint keeps the ring (it's core product content). "Today" moves to a small corner dot/mark instead of its current filled-circle-behind-the-number treatment, since a filled circle would also obscure a photo cell.
+- Day cells show the day's cover photo (lowest-`sortOrder` active `VisitPhoto`) via `PhotoAssetThumbnailView`, falling back to the plain number treatment for photo-less visit days — confirmed a real, common case since `Visit.photos` is optional and the AddPlace flow never requires one.
+- **Count badge** (top-trailing, accent-filled circle) shown when a day has more than one Visit, independent of whether the cell has a photo.
+- **Feeling tint** uses dominant emotion (by count, ties broken toward the more positive emotion), rendered as an accent-colored ring around the cell.
+- **"Today"** is a small accent dot beside the day number (not a ring — that's reserved for the emotion tint, and a filled circle would obscure a photo).
+- **Cell sizing**: derived from measured screen width (`GeometryReader` + background measurement, not `UIScreen.main.bounds`), with near-edge-to-edge margins/column-spacing to maximize cell size — width, not height, is the binding constraint at 7 columns on a phone, so a parallel height-based sizing branch was added but is a no-op in practice. Day number, "today" dot, count badge, and emotion-ring stroke width all scale proportionally with cell size rather than staying fixed, so they stay visually balanced as cells grow/shrink.
+- **Swipe-to-change-month/year**, added beyond the original scope after user request. Required a custom `UIViewRepresentable` (`HorizontalSwipeRecognizerView`) wrapping a real `UIPanGestureRecognizer` with `cancelsTouchesInView = false` — SwiftUI's own `.gesture`/`.simultaneousGesture`/`.highPriorityGesture` cannot out-arbitrate `ScrollView`'s native `UIScrollView.panGestureRecognizer`, which lives outside SwiftUI's gesture tree entirely. The swipe-catching overlay is deliberately **not** placed on top of day-cell/month-cell buttons (three attempts at making tap-and-swipe coexist on the same overlay all still broke tapping on-device) — it only covers the header area and the blank space below the grid. Vertical `ScrollView` scrolling is disabled whenever the month's content already fits the screen (the normal portrait case), since leaving it enabled produced vertical jitter/scrollbar-flash fighting the horizontal swipe.
 - Grid is a fixed single month (`LazyVGrid`, ~35-42 cells max, no infinite scroll), so bounded thumbnail loading is not a performance concern.
+
+Note: this project uses XcodeGen (`project.yml`) — any new Swift file needs `xcodegen generate` run before Xcode's build will see it; `Write`-ing the file alone is not sufficient.
 
 **5. One bespoke motion moment**
 Best candidate: emotion selection spring + haptic, or a `matchedGeometryEffect` transition from map pin to place detail sheet. Pick one, not both — keep scope tight. Only pursue if steps 1–4 still feel insufficient.

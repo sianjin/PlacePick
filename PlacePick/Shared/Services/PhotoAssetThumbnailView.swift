@@ -18,6 +18,11 @@ struct PhotoAssetThumbnailView: View {
                 Image(uiImage: thumbnail)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
+                    // Without an explicit frame here, a resizable Image inside a ZStack
+                    // sizes itself from the source photo's own aspect ratio instead of
+                    // filling whatever frame the caller imposes from outside — landscape
+                    // vs. portrait source photos would render at different cell widths.
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Rectangle().fill(Color(.secondarySystemBackground))
                 Image(systemName: fallbackIcon)

@@ -10,6 +10,22 @@ struct CalendarScreen: View {
     @State private var displayedMonth = Calendar.current.startOfDay(for: .now)
     @State private var selectedDay: SelectedDay?
     @State private var isPresentingYearMonthPicker = false
+    /// Measured once by monthGrid's background GeometryReader and re-measured on rotation —
+    /// nil only on the very first render before that measurement lands, when dayCell falls
+    /// back to a reasonable default size rather than a jarring zero-width flash.
+    @State private var gridWidth: CGFloat?
+    /// Measured the same way as gridWidth, via monthHeader's own background
+    /// GeometryReader — used to size the trailing blank-space swipe region to start right
+    /// below monthHeader, without a hardcoded height.
+    @State private var monthHeaderHeight: CGFloat = 56
+    /// monthGrid's own measured height, via its background GeometryReader — used together
+    /// with monthHeaderHeight to size the trailing blank-space swipe region to fill exactly
+    /// what's left of the screen below the grid.
+    @State private var gridContentHeight: CGFloat = 0
+    /// weekdayHeader's own measured height, via its background GeometryReader — used
+    /// together with monthHeaderHeight and screen height to derive cellSize from
+    /// available height as well as width (see monthGrid's doc comment).
+    @State private var weekdayHeaderHeight: CGFloat = 20
 
     private let calendar = Calendar.current
 
@@ -60,11 +76,74 @@ struct CalendarScreen: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                monthHeader
-                weekdayHeader
-                monthGrid
-                Spacer()
+            GeometryReader { screenProxy in
+                // Scrolling only exists as a landscape/short-screen fallback for when a
+                // month's rows genuinely don't fit. Leaving it enabled unconditionally
+                // meant every portrait swipe-to-change-month gesture was also competing
+                // with ScrollView's own vertical pan recognizer, which is what produced
+                // the vertical jitter/scrollbar-flash the user reported — a swipe that's
+                // slightly off pure-horizontal would get partially eaten as a scroll. With
+                // scrolling off whenever content actually fits the screen (the normal
+                // portrait case), there's no vertical pan gesture present to compete with
+                // at all.
+                let contentFits = monthHeaderHeight + gridContentHeight <= screenProxy.size.height
+                let availableGridHeight = max(0, screenProxy.size.height - monthHeaderHeight - weekdayHeaderHeight)
+
+                ScrollView {
+                    VStack(spacing: 0) {
+                        monthHeader
+
+                        weekdayHeader
+                        monthGrid(availableHeight: availableGridHeight)
+                            .background {
+                                GeometryReader { proxy in
+                                    Color.clear.onAppear { gridContentHeight = proxy.size.height }
+                                        .onChange(of: proxy.size.height) { _, newHeight in gridContentHeight = newHeight }
+                                }
+                            }
+
+                        // Swipe-to-navigate reuses shiftMonth(by:), the same logic already
+                        // wired to the chevron buttons, so behavior can't drift between
+                        // the two ways of changing month.
+                        //
+                        // This sits in the blank space *below* monthGrid, not on top of
+                        // it or of monthHeader — three attempts at overlaying the day-cell
+                        // grid itself (plain hitTest passthrough, cancelsTouchesInView, a
+                        // UIGestureRecognizerDelegate declaring simultaneous recognition)
+                        // all still ended up blocking taps on the day-cell Buttons
+                        // underneath on device, and the header's dropdown button had the
+                        // same problem the first time this covered the whole screen. A
+                        // day cell or month cell itself is therefore tap-only — swipe
+                        // works from the header and from this trailing blank region, sized
+                        // to fill the rest of the screen below the grid using
+                        // gridContentHeight (monthGrid's own measured height) and
+                        // monthHeaderHeight, both real measurements rather than guessed
+                        // constants.
+                        //
+                        // None of SwiftUI's own gesture-priority modifiers (.gesture,
+                        // .simultaneousGesture, .highPriorityGesture — all tried, all
+                        // silently did nothing on device) can out-arbitrate a ScrollView's
+                        // native UIScrollView.panGestureRecognizer, because that recognizer
+                        // lives outside SwiftUI's gesture-composition tree entirely; those
+                        // modifiers only arbitrate against other SwiftUI gestures.
+                        // HorizontalSwipeRecognizerView wraps a real UIPanGestureRecognizer
+                        // with a UIGestureRecognizerDelegate — the one API that actually
+                        // arbitrates against a native recognizer — which is still needed
+                        // here since this blank region also sits inside the same
+                        // ScrollView.
+                        Color.clear
+                            .frame(minHeight: max(0, screenProxy.size.height - monthHeaderHeight - gridContentHeight))
+                            .overlay {
+                                HorizontalSwipeRecognizerView { leftward in
+                                    withAnimation {
+                                        shiftMonth(by: leftward ? 1 : -1)
+                                    }
+                                }
+                            }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .scrollDisabled(contentFits)
             }
             .navigationTitle("Calendar")
             .navigationBarTitleDisplayMode(.inline)
@@ -112,6 +191,12 @@ struct CalendarScreen: View {
         }
         .padding(.horizontal)
         .padding(.top, 8)
+        .background {
+            GeometryReader { proxy in
+                Color.clear.onAppear { monthHeaderHeight = proxy.size.height }
+                    .onChange(of: proxy.size.height) { _, newHeight in monthHeaderHeight = newHeight }
+            }
+        }
     }
 
     private var weekdayHeader: some View {
@@ -124,24 +209,85 @@ struct CalendarScreen: View {
             }
         }
         .padding(.top, 12)
+        .background {
+            GeometryReader { proxy in
+                Color.clear.onAppear { weekdayHeaderHeight = proxy.size.height }
+                    .onChange(of: proxy.size.height) { _, newHeight in weekdayHeaderHeight = newHeight }
+            }
+        }
     }
 
-    private var monthGrid: some View {
+    /// A resizable Image's own aspect ratio can leak through GridItem(.flexible())'s
+    /// proposed width inside a LazyVGrid — a wide source photo bled its column wider than
+    /// its neighbors, visibly shifting the day number and, on edge columns with no
+    /// neighbor to compress against, expanding freely. Reading the available width via
+    /// GeometryReader and deriving one explicit cellSize removes that ambiguity: every
+    /// cell gets the same hard .frame(width:height:), so no child's intrinsic content size
+    /// can influence a cell's box.
+    ///
+    /// The GeometryReader lives in a zero-height .background rather than wrapping the grid
+    /// directly — a GeometryReader wrapping content reports a *fixed* size to its children
+    /// (it doesn't propagate their natural height back out), which previously forced this
+    /// view into a separate, error-prone manually-computed height. Reading width via a
+    /// background instead leaves LazyVGrid free to report its own natural content height,
+    /// which is also what makes the enclosing ScrollView on the whole screen (added
+    /// alongside this) actually able to scroll every row into view, including in landscape
+    /// where the screen's height doesn't fit a full month without scrolling.
+    ///
+    /// cellSize is derived from BOTH available width and available height, taking
+    /// whichever is smaller — deriving it from width alone (screenWidth / 7) left most of
+    /// a typical portrait screen's height as unused blank space below the grid even after
+    /// trimming spacing/margins, since those are small next to the screen's actual excess
+    /// height. Taking the min of both means a short month (5 rows) gets larger cells than
+    /// a long one (6 rows), since the same available height splits across fewer rows —
+    /// intentional, so the grid always fills the screen rather than leaving dead space.
+    private func monthGrid(availableHeight: CGFloat) -> some View {
         let days = daysInGrid(for: displayedMonth)
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+        // Column spacing stays tight so cells claim as much of the row's width as
+        // possible; row spacing is larger than column spacing so weeks read as visually
+        // distinct (user feedback: cells packed edge-to-edge vertically made the photos
+        // feel dense and hard to make out).
+        // LazyVGrid's own `spacing:` controls row gaps only once each GridItem carries its
+        // own column spacing, so the two can differ.
+        //
+        // Width, not height, is the binding constraint on a phone (7 columns vs. 5-6
+        // rows), so column spacing/margin — not row spacing — is the actual lever for
+        // bigger cells; tightened further here (from 6pt/8pt margin to near edge-to-edge,
+        // matching Day One's own calendar) after discovering the height-based branch of
+        // cellSize below could only ever match or lose to the width-based one, never win,
+        // since width was already the smaller number.
+        let columnSpacing: CGFloat = 3
+        let rowSpacing: CGFloat = 12
+
+        let rowCount = CGFloat((days.count + 6) / 7)
+        let widthBasedSize = gridWidth.map { ($0 - columnSpacing * 6) / 7 }
+        let heightBasedSize = rowCount > 0 ? max(0, (availableHeight - rowSpacing * (rowCount - 1)) / rowCount) : nil
+        let cellSize = [widthBasedSize, heightBasedSize].compactMap { $0 }.min() ?? 44
+
+        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: columnSpacing), count: 7), spacing: rowSpacing) {
             ForEach(days, id: \.self) { day in
                 if let day {
-                    dayCell(day)
+                    dayCell(day, size: cellSize)
                 } else {
-                    Color.clear.frame(height: 40)
+                    Color.clear.frame(width: cellSize, height: cellSize)
                 }
             }
         }
-        .padding(.horizontal)
+        .background {
+            GeometryReader { proxy in
+                Color.clear.onAppear { gridWidth = proxy.size.width }
+                    .onChange(of: proxy.size.width) { _, newWidth in gridWidth = newWidth }
+            }
+        }
+        // Near edge-to-edge, matching Day One's own calendar — cellSize is screen width
+        // minus this padding divided across 7 columns, so trimming the margin here is the
+        // actual lever for larger cells (width is the binding constraint on a phone, not
+        // height — see columnSpacing's comment above).
+        .padding(.horizontal, 2)
         .padding(.top, 8)
     }
 
-    private func dayCell(_ day: Date) -> some View {
+    private func dayCell(_ day: Date, size: CGFloat) -> some View {
         let isToday = calendar.isDateInToday(day)
         let summary = daySummaries[calendar.startOfDay(for: day)]
 
@@ -149,7 +295,7 @@ struct CalendarScreen: View {
             guard summary != nil else { return }
             selectedDay = SelectedDay(date: day)
         } label: {
-            DayCellContent(day: day, isToday: isToday, summary: summary)
+            DayCellContent(day: day, isToday: isToday, summary: summary, size: size)
         }
         .buttonStyle(.plain)
         .disabled(summary == nil)
@@ -201,73 +347,88 @@ private struct DayCellContent: View {
     let day: Date
     let isToday: Bool
     let summary: DaySummary?
+    /// Explicit, pre-computed square size from monthGrid's GeometryReader — every branch
+    /// below must apply this as a hard .frame(width:height:), not .frame(maxWidth: .infinity),
+    /// since a resizable Image's own aspect ratio can otherwise leak through a merely
+    /// "flexible" proposal and inflate the cell (see monthGrid's doc comment).
+    let size: CGFloat
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack(alignment: .topLeading) {
             if let summary, let coverPhotoIdentifier = summary.coverPhotoIdentifier {
                 PhotoAssetThumbnailView(localAssetIdentifier: coverPhotoIdentifier, fallbackIcon: "photo")
-                    .frame(height: 40)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .frame(width: size, height: size)
+                    .clipShape(RoundedRectangle(cornerRadius: size * 0.14))
                     .overlay {
                         if let dominantEmotion = summary.dominantEmotion {
-                            RoundedRectangle(cornerRadius: 8)
-                                .strokeBorder(dominantEmotion.tintColor, lineWidth: 2)
+                            RoundedRectangle(cornerRadius: size * 0.14)
+                                .strokeBorder(dominantEmotion.tintColor, lineWidth: max(2, size * 0.035))
                         }
                     }
-                    .overlay(alignment: .bottomLeading) {
-                        dayNumber
-                            .foregroundStyle(.white)
-                            .shadow(radius: 2)
-                            .padding(4)
-                    }
             } else {
-                VStack(spacing: 4) {
-                    dayNumber
-                        .foregroundStyle(summary == nil ? .secondary : .primary)
-
-                    Circle()
-                        .fill(summary == nil ? .clear : Color.accentColor)
-                        .frame(width: 5, height: 5)
-                }
-                .frame(height: 40)
-                .frame(maxWidth: .infinity)
-                .overlay {
-                    if let dominantEmotion = summary?.dominantEmotion {
-                        Circle()
-                            .strokeBorder(dominantEmotion.tintColor, lineWidth: 2)
-                            .frame(width: 32, height: 32)
+                Color.clear
+                    .frame(width: size, height: size)
+                    .overlay {
+                        if let dominantEmotion = summary?.dominantEmotion {
+                            Circle()
+                                .strokeBorder(dominantEmotion.tintColor, lineWidth: max(2, size * 0.035))
+                                .frame(width: size * 0.85, height: size * 0.85)
+                        }
                     }
-                }
+            }
+
+            // Same top-leading position in every cell, photo or not, so the number doesn't
+            // jump around as the eye scans a row mixing both cell types.
+            dayNumber
+                .foregroundStyle(summary?.coverPhotoIdentifier != nil ? .white : (summary == nil ? .secondary : .primary))
+                .shadow(radius: summary?.coverPhotoIdentifier != nil ? 2 : 0)
+                .padding(size * 0.09)
+
+            if summary != nil, summary?.coverPhotoIdentifier == nil {
+                Circle()
+                    .fill(Color.accentColor)
+                    .frame(width: size * 0.1, height: size * 0.1)
+                    .frame(width: size, height: size, alignment: .bottom)
+                    .padding(.bottom, size * 0.13)
             }
 
             if let summary, summary.visitCount > 1 {
-                countBadge(summary.visitCount)
-                    .offset(x: 6, y: -6)
+                countBadge(summary.visitCount, size: size)
+                    .frame(width: size, height: size, alignment: .topTrailing)
+                    .offset(x: size * 0.12, y: -size * 0.12)
             }
         }
+        .frame(width: size, height: size)
     }
 
     /// "Today" is a small trailing dot beside the number rather than the previous
     /// filled-circle-behind-the-number treatment — a fill would sit on top of and obscure a
     /// Photo cell. It also can't reuse the ring used for dominantEmotion below, since a cell
     /// can be both today and carry an Emotion tint at once.
+    ///
+    /// Font size and dot size scale with the cell's own size (proportional constants
+    /// below) rather than staying fixed — a fixed font/dot size was invisible to the eye
+    /// as cellSize changed elsewhere, since these are small elements relative to the whole
+    /// cell; scaling them keeps the day number, "today" dot, ring stroke, and count badge
+    /// all visually balanced as cells grow or shrink, and makes any future cell-size
+    /// change actually visible rather than subtle.
     private var dayNumber: some View {
         HStack(spacing: 2) {
             Text(day, format: .dateTime.day())
-                .font(.subheadline.weight(isToday ? .semibold : .regular))
+                .font(.system(size: size * 0.32, weight: isToday ? .semibold : .regular))
             if isToday {
                 Circle()
                     .fill(Color.accentColor)
-                    .frame(width: 4, height: 4)
+                    .frame(width: size * 0.09, height: size * 0.09)
             }
         }
     }
 
-    private func countBadge(_ count: Int) -> some View {
+    private func countBadge(_ count: Int, size: CGFloat) -> some View {
         Text("\(count)")
-            .font(.system(size: 10, weight: .bold))
+            .font(.system(size: max(9, size * 0.22), weight: .bold))
             .foregroundStyle(.white)
-            .padding(4)
+            .padding(size * 0.09)
             .background(Circle().fill(Color.accentColor))
     }
 }
