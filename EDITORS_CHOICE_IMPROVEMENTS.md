@@ -1,6 +1,6 @@
 # PlacePick — Editor's Choice Improvement Plan
 
-Status: In progress — step 4 (photo-first calendar) shipped on `feature/editors-choice-ui`, steps 1–3 and 5–6 not started
+Status: In progress — steps 2–4 shipped on `feature/editors-choice-ui`; step 5 effectively folded into step 2; steps 1 and 6 not started
 Date: 2026-08-01, updated 2026-08-07
 
 ---
@@ -25,11 +25,11 @@ The `EmotionPicker` — the headline differentiator ("a feeling, not a score") �
 **1. Minimal design system** (`Theme.swift` or similar)
 Small set of constants: 2–3 accent colors (could build on the emotion concept — warm tone for "amazed," neutral gray for "neutral"), one corner-radius scale (e.g. 12/16/20), one shadow style. Every other change below depends on this existing first.
 
-**2. Redesign `EmotionPicker`**
-Replace bare `Text(emoji)` with circular backgrounds sized to `.title` emoji, a real selected state (scale + colored ring/fill, not just opacity), spring animation on selection (`withAnimation(.spring)`). Self-contained, ~40-line rewrite in `PersonalInfoForm.swift` / reused in `MemoryDetailScreen.swift`. Highest visual payoff for the lowest risk — do this first after the theme file.
+**2. Redesign `EmotionPicker` — SHIPPED** (`PersonalInfoForm.swift`, `PlaceEmotion+Style.swift`)
+Selected emotion gets a colored ring (`PlaceEmotion.tintColor` — promoted out of `CalendarScreen.swift` into its own shared extension file so the emotion picker and the calendar's day-cell rings use identical colors) plus a spring scale-up (1.0 → 1.12, `response: 0.35, dampingFraction: 0.6`), and a light haptic tap via the existing `Haptics.selection()` helper. Unselected options still dim to 40% opacity once something is picked. Self-contained change to `EmotionPicker` in `PersonalInfoForm.swift`; `MemoryDetailScreen.swift` gets it for free since both use the same component.
 
-**3. Card treatment for `MemoryCard` / `PlaceDetailSheet` / `MemoryRow`**
-Background fill, corner radius from theme constants, subtle shadow. Small diffs, benefits every screenshot at once.
+**3. Card treatment for `MemoryCard` / `PlaceDetailSheet` / `MemoryRow` — SHIPPED** (`DayDetailScreen.swift`, `PlaceDetailSheet.swift`, `CardStyle.swift`)
+Both now have a `secondarySystemBackground` fill, a rounded container (16pt outer / 10pt inner for nested photo corners), and a subtle shadow (12% black, 6pt radius, 2pt y-offset) — pulled from a new shared `CardStyle` enum rather than each hand-typing its own `cornerRadius`. `MemoryRow` sits in a plain `VStack(spacing: 10)`, not a native `List`, so the card treatment fits without fighting an existing list style.
 
 **4. Photo-first calendar month view — SHIPPED** (`feature/editors-choice-ui`, `CalendarScreen.swift` / `YearMonthPickerScreen.swift` / `HorizontalSwipeRecognizerView.swift`)
 Reference: Day One's month grid shows a photo thumbnail in each day cell that has an entry, instead of a plain dot. Adapted (not copied) for PlacePick — final shipped design diverges from the original proposal in a few places, noted below.
@@ -44,15 +44,15 @@ Reference: Day One's month grid shows a photo thumbnail in each day cell that ha
 
 Note: this project uses XcodeGen (`project.yml`) — any new Swift file needs `xcodegen generate` run before Xcode's build will see it; `Write`-ing the file alone is not sufficient.
 
-**5. One bespoke motion moment**
-Best candidate: emotion selection spring + haptic, or a `matchedGeometryEffect` transition from map pin to place detail sheet. Pick one, not both — keep scope tight. Only pursue if steps 1–4 still feel insufficient.
+**5. One bespoke motion moment — folded into step 2**
+The emotion-picker spring + haptic (step 2) is this moment; the `matchedGeometryEffect` map-pin-to-detail-sheet transition remains an option but is on hold — revisit only if the app still feels flat after seeing 1–4 together in context.
 
 **6. Reshoot App Store screenshots**
-After 1–4 land, with real data. Add a Collections/sharing screenshot to show product range beyond map/list/detail. The photo-first calendar (step 4) is a strong new "designed moment" screenshot candidate.
+Not started. After step 1 (if pursued), with real data. Add a Collections/sharing screenshot to show product range beyond map/list/detail. The photo-first calendar (step 4) and the restyled cards (step 3) are strong new "designed moment" screenshot candidates.
 
 ## Sequencing
 
-Theme file → EmotionPicker rewrite → card styling → photo-first calendar → reshoot screenshots. Hold the `matchedGeometryEffect` transition (step 5) until after seeing whether 1–4 close the gap.
+~~Theme file~~ → EmotionPicker rewrite (2) → photo-first calendar (4) → card styling (3, using constants pulled out ad hoc rather than a separate upfront theme file) → remaining: step 1 (now optional/low-priority — two features shipped without it) and step 6 (reshoot screenshots).
 
 ## Reference apps
 

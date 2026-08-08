@@ -237,7 +237,7 @@ private struct MemoryRow: View {
         HStack(spacing: 12) {
             PhotoAssetThumbnailView(localAssetIdentifier: coverPhoto?.localAssetIdentifier, fallbackIcon: fallbackIcon)
                 .frame(width: 56, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(RoundedRectangle(cornerRadius: CardStyle.innerCornerRadius))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(visit.startedAt, format: .dateTime.month(.abbreviated).day().year())
@@ -263,6 +263,10 @@ private struct MemoryRow: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
+        .padding(10)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: CardStyle.outerCornerRadius))
+        .shadow(color: CardStyle.shadowColor, radius: CardStyle.shadowRadius, y: CardStyle.shadowYOffset)
     }
 }
 

@@ -308,11 +308,11 @@ struct MemoryCard: View {
                     .aspectRatio(contentMode: .fill)
                     .frame(height: 180)
                     .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: CardStyle.innerCornerRadius))
             } else {
                 PhotoAssetThumbnailView(localAssetIdentifier: coverPhotoIdentifier, fallbackIcon: visit.place?.displayIcon ?? "mappin.circle")
                     .frame(height: 180)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: CardStyle.innerCornerRadius))
             }
 
             Text(visit.place?.name ?? "")
@@ -343,6 +343,10 @@ struct MemoryCard: View {
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: CardStyle.outerCornerRadius))
+        .shadow(color: CardStyle.shadowColor, radius: CardStyle.shadowRadius, y: CardStyle.shadowYOffset)
         .task(id: visit.place?.id) {
             guard let place = visit.place else { return }
             placeTimeZone = PlaceTimeZoneResolver.cached(for: place.coordinate)

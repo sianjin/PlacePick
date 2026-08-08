@@ -79,20 +79,40 @@ struct PersonalInfoForm: View {
     }
 }
 
+/// "A feeling, not a score" is PlacePick's stated differentiator (see App Store copy), so
+/// the selected state needs to read as a considered choice rather than the bare
+/// Text(emoji)+opacity treatment this replaced — a colored ring (PlaceEmotion.tintColor,
+/// the same mapping the Calendar's day-cell emotion tint uses) plus a spring scale-up on
+/// selection, with a light haptic tap via Haptics.selection().
 struct EmotionPicker: View {
     @Binding var emotion: PlaceEmotion?
 
     private let options: [PlaceEmotion] = [.neutral, .happy, .amazed]
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 20) {
             ForEach(options, id: \.self) { option in
+                let isSelected = emotion == option
+
                 Button {
-                    emotion = (emotion == option) ? nil : option
+                    Haptics.selection()
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) {
+                        emotion = isSelected ? nil : option
+                    }
                 } label: {
                     Text(option.symbolEmoji)
-                        .font(.title2)
-                        .opacity(emotion == nil || emotion == option ? 1.0 : 0.35)
+                        .font(.system(size: 28))
+                        .frame(width: 48, height: 48)
+                        .background {
+                            Circle()
+                                .fill(Color(.secondarySystemBackground))
+                        }
+                        .overlay {
+                            Circle()
+                                .strokeBorder(option.tintColor, lineWidth: isSelected ? 3 : 0)
+                        }
+                        .scaleEffect(isSelected ? 1.12 : 1.0)
+                        .opacity(emotion == nil || isSelected ? 1.0 : 0.4)
                 }
                 .buttonStyle(.plain)
             }

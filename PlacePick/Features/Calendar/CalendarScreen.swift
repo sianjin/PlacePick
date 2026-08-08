@@ -444,14 +444,6 @@ extension PlaceEmotion {
         case .amazed: return 2
         }
     }
-
-    fileprivate var tintColor: Color {
-        switch self {
-        case .neutral: return .gray
-        case .happy: return .yellow
-        case .amazed: return .orange
-        }
-    }
 }
 
 #Preview {
