@@ -60,7 +60,8 @@ platform :ios do
       force: true,
       skip_binary_upload: true,
       skip_metadata: false,
-      skip_screenshots: false
+      skip_screenshots: false,
+      overwrite_screenshots: true
     )
   end
 
@@ -72,7 +73,8 @@ platform :ios do
     deliver(
       submit_for_review: true,
       automatic_release: options[:auto_release] == true,
-      force: true
+      force: true,
+      overwrite_screenshots: true
     )
   end
 end

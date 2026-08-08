@@ -30,5 +30,7 @@ fastlane/report.xml
 fastlane/test_output/
 
 # frameit inputs: raw pre-frame screenshots and copied system font (regenerate via `fastlane frameit`)
-fastlane/screenshots/originals/
+# NOTE: screenshot_originals lives outside fastlane/screenshots/ because `deliver` validates
+# every subdirectory of fastlane/screenshots/ as an App Store locale code and errors otherwise.
+fastlane/screenshot_originals/
 fastlane/screenshots/SFNS.ttf
