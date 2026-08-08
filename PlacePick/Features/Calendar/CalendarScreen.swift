@@ -14,7 +14,48 @@ struct CalendarScreen: View {
     private let calendar = Calendar.current
 
     private var daysWithVisits: Set<Date> {
-        Set(visits.filter { $0.deletedAt == nil }.map { calendar.startOfDay(for: $0.startedAt) })
+        Set(daySummaries.keys)
+    }
+
+    /// One summary per day with at least one active Visit — cover photo (if any), Visit
+    /// count, and dominant Emotion — computed once per grid render rather than per cell, so
+    /// dayCell(_:) stays a pure lookup. Dominant, not most-recent, Emotion: a day's tint
+    /// should reflect what the day was mostly like, not be arbitrarily decided by whichever
+    /// Visit happened to be logged last.
+    private var daySummaries: [Date: DaySummary] {
+        let grouped = Dictionary(grouping: visits.filter { $0.deletedAt == nil }) {
+            calendar.startOfDay(for: $0.startedAt)
+        }
+        return grouped.mapValues(summarize(visitsForDay:))
+    }
+
+    private func summarize(visitsForDay: [Visit]) -> DaySummary {
+        let orderedVisits = visitsForDay.sorted { $0.startedAt < $1.startedAt }
+        let coverPhotoIdentifier = orderedVisits.compactMap(firstActivePhotoIdentifier).first
+
+        let emotionCounts: [PlaceEmotion: Int] = Dictionary(grouping: visitsForDay.compactMap(\.emotion), by: { $0 })
+            .mapValues(\.count)
+        let dominantEmotion = emotionCounts.max(by: isLessPreferred)?.key
+
+        return DaySummary(visitCount: visitsForDay.count, coverPhotoIdentifier: coverPhotoIdentifier, dominantEmotion: dominantEmotion)
+    }
+
+    /// Tie-break rule for picking a day's dominant Emotion: more occurrences wins; on a
+    /// count tie, the more positive Emotion wins, rather than an arbitrary/insertion-order
+    /// pick.
+    private func isLessPreferred(_ lhs: (key: PlaceEmotion, value: Int), _ rhs: (key: PlaceEmotion, value: Int)) -> Bool {
+        if lhs.value != rhs.value {
+            return lhs.value < rhs.value
+        }
+        return lhs.key.positivityRank < rhs.key.positivityRank
+    }
+
+    /// Matches VisitPhotoRepository.fetchPhotos' cover-photo convention (lowest sortOrder,
+    /// not insertion order) — see VisitPhotoRepository.reorder, which is how "set as cover
+    /// photo" is implemented.
+    private func firstActivePhotoIdentifier(of visit: Visit) -> String? {
+        let activePhotos = (visit.photos ?? []).filter { $0.deletedAt == nil }
+        return activePhotos.min { $0.sortOrder < $1.sortOrder }?.localAssetIdentifier
     }
 
     var body: some View {
@@ -102,26 +143,16 @@ struct CalendarScreen: View {
 
     private func dayCell(_ day: Date) -> some View {
         let isToday = calendar.isDateInToday(day)
-        let hasVisits = daysWithVisits.contains(calendar.startOfDay(for: day))
+        let summary = daySummaries[calendar.startOfDay(for: day)]
 
         return Button {
-            guard hasVisits else { return }
+            guard summary != nil else { return }
             selectedDay = SelectedDay(date: day)
         } label: {
-            VStack(spacing: 4) {
-                Text(day, format: .dateTime.day())
-                    .font(.subheadline.weight(isToday ? .bold : .regular))
-                    .foregroundStyle(hasVisits ? .primary : .secondary)
-                    .frame(width: 32, height: 32)
-                    .background(isToday ? Circle().fill(Color.accentColor.opacity(0.15)) : nil)
-
-                Circle()
-                    .fill(hasVisits ? Color.accentColor : .clear)
-                    .frame(width: 5, height: 5)
-            }
+            DayCellContent(day: day, isToday: isToday, summary: summary)
         }
         .buttonStyle(.plain)
-        .disabled(!hasVisits)
+        .disabled(summary == nil)
     }
 
     /// Full weeks including leading/trailing days from adjacent months as nil placeholders
@@ -153,6 +184,113 @@ struct CalendarScreen: View {
 private struct SelectedDay: Identifiable {
     let date: Date
     var id: TimeInterval { date.timeIntervalSinceReferenceDate }
+}
+
+private struct DaySummary {
+    let visitCount: Int
+    let coverPhotoIdentifier: String?
+    let dominantEmotion: PlaceEmotion?
+}
+
+/// A single Calendar day cell. Shows the day's cover Photo when one exists — reusing
+/// PhotoAssetThumbnailView, the same async PHAsset pipeline as MemoryCard and
+/// PlaceDetailSheet — falling back to the plain number-and-dot treatment for days whose
+/// Visits have no attached Photo (Visit.photos is optional and the AddPlace flow never
+/// requires one, so this is a common case, not an edge case).
+private struct DayCellContent: View {
+    let day: Date
+    let isToday: Bool
+    let summary: DaySummary?
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            if let summary, let coverPhotoIdentifier = summary.coverPhotoIdentifier {
+                PhotoAssetThumbnailView(localAssetIdentifier: coverPhotoIdentifier, fallbackIcon: "photo")
+                    .frame(height: 40)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay {
+                        if let dominantEmotion = summary.dominantEmotion {
+                            RoundedRectangle(cornerRadius: 8)
+                                .strokeBorder(dominantEmotion.tintColor, lineWidth: 2)
+                        }
+                    }
+                    .overlay(alignment: .bottomLeading) {
+                        dayNumber
+                            .foregroundStyle(.white)
+                            .shadow(radius: 2)
+                            .padding(4)
+                    }
+            } else {
+                VStack(spacing: 4) {
+                    dayNumber
+                        .foregroundStyle(summary == nil ? .secondary : .primary)
+
+                    Circle()
+                        .fill(summary == nil ? .clear : Color.accentColor)
+                        .frame(width: 5, height: 5)
+                }
+                .frame(height: 40)
+                .frame(maxWidth: .infinity)
+                .overlay {
+                    if let dominantEmotion = summary?.dominantEmotion {
+                        Circle()
+                            .strokeBorder(dominantEmotion.tintColor, lineWidth: 2)
+                            .frame(width: 32, height: 32)
+                    }
+                }
+            }
+
+            if let summary, summary.visitCount > 1 {
+                countBadge(summary.visitCount)
+                    .offset(x: 6, y: -6)
+            }
+        }
+    }
+
+    /// "Today" is a small trailing dot beside the number rather than the previous
+    /// filled-circle-behind-the-number treatment — a fill would sit on top of and obscure a
+    /// Photo cell. It also can't reuse the ring used for dominantEmotion below, since a cell
+    /// can be both today and carry an Emotion tint at once.
+    private var dayNumber: some View {
+        HStack(spacing: 2) {
+            Text(day, format: .dateTime.day())
+                .font(.subheadline.weight(isToday ? .semibold : .regular))
+            if isToday {
+                Circle()
+                    .fill(Color.accentColor)
+                    .frame(width: 4, height: 4)
+            }
+        }
+    }
+
+    private func countBadge(_ count: Int) -> some View {
+        Text("\(count)")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(.white)
+            .padding(4)
+            .background(Circle().fill(Color.accentColor))
+    }
+}
+
+extension PlaceEmotion {
+    /// Ordering used only to break emotion-count ties when computing a day's dominant
+    /// Emotion (CalendarScreen.daySummaries) — favors the more positive Emotion rather than
+    /// an arbitrary/insertion-order pick.
+    fileprivate var positivityRank: Int {
+        switch self {
+        case .neutral: return 0
+        case .happy: return 1
+        case .amazed: return 2
+        }
+    }
+
+    fileprivate var tintColor: Color {
+        switch self {
+        case .neutral: return .gray
+        case .happy: return .yellow
+        case .amazed: return .orange
+        }
+    }
 }
 
 #Preview {
