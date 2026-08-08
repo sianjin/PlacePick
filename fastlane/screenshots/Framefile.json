@@ -4,7 +4,7 @@
       "font": "./SFNS.ttf",
       "color": "#1c1c1e"
     },
-    "background": "./background_white.png",
+    "background": "./background_blue.png",
     "padding": 60,
     "show_complete_frame": true
   },
