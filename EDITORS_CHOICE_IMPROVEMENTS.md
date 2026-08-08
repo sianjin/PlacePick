@@ -1,4 +1,4 @@
-# PlacePick — Editor's Choice Improvement Plan
+# MomentMap — Editor's Choice Improvement Plan
 
 Status: In progress — steps 2–4 shipped on `feature/editors-choice-ui`; step 5 effectively folded into step 2; step 1 dropped (see note); step 6 not started
 Date: 2026-08-01, updated 2026-08-07
@@ -7,7 +7,7 @@ Date: 2026-08-01, updated 2026-08-07
 
 ## Context
 
-PlacePick has strong positioning and disciplined App Store copy ("A place is a fact. What happened there is a memory."), but the visual execution isn't yet at Editor's Choice bar. Current App Store screenshots lean on stock MapKit chrome and default SwiftUI components rather than showing designed moments.
+MomentMap has strong positioning and disciplined App Store copy ("A place is a fact. What happened there is a memory."), but the visual execution isn't yet at Editor's Choice bar. Current App Store screenshots lean on stock MapKit chrome and default SwiftUI components rather than showing designed moments.
 
 Confirmed by reading the actual views — there is no design system in the codebase: no `Theme.swift` / `Colors.swift` / `Fonts.swift`, no custom color sets in `Assets.xcassets`, all typography is system fonts (`.headline`, `.subheadline`), all colors are system semantic (`.primary`, `.secondary`, `Color.accentColor`). The custom `VStack`/`HStack` card layouts already in place (`MemoryCard`, `PlaceDetailSheet`, `MemoryRow`) are a reasonable foundation — they just carry no visual polish (no shadow, no card background, ad hoc `cornerRadius: 12` repeated by hand instead of a shared token).
 
@@ -32,7 +32,7 @@ Selected emotion gets a colored ring (`PlaceEmotion.tintColor` — promoted out 
 Both now have a `secondarySystemBackground` fill, a rounded container (16pt outer / 10pt inner for nested photo corners), and a subtle shadow (12% black, 6pt radius, 2pt y-offset) — pulled from a new shared `CardStyle` enum rather than each hand-typing its own `cornerRadius`. `MemoryRow` sits in a plain `VStack(spacing: 10)`, not a native `List`, so the card treatment fits without fighting an existing list style.
 
 **4. Photo-first calendar month view — SHIPPED** (`feature/editors-choice-ui`, `CalendarScreen.swift` / `YearMonthPickerScreen.swift` / `HorizontalSwipeRecognizerView.swift`)
-Reference: Day One's month grid shows a photo thumbnail in each day cell that has an entry, instead of a plain dot. Adapted (not copied) for PlacePick — final shipped design diverges from the original proposal in a few places, noted below.
+Reference: Day One's month grid shows a photo thumbnail in each day cell that has an entry, instead of a plain dot. Adapted (not copied) for MomentMap — final shipped design diverges from the original proposal in a few places, noted below.
 
 - Day cells show the day's cover photo (lowest-`sortOrder` active `VisitPhoto`) via `PhotoAssetThumbnailView`, falling back to the plain number treatment for photo-less visit days — confirmed a real, common case since `Visit.photos` is optional and the AddPlace flow never requires one.
 - **Count badge** (top-trailing, accent-filled circle) shown when a day has more than one Visit, independent of whether the cell has a photo.
@@ -63,7 +63,7 @@ Added after studying Apple Journal (see Competitive positioning below) — Place
 
 Apple Journal is visually more polished than Day One (gradient hero cards, native photo-collage stacking, on-device ML auto-titling, video support) — worth studying for craft, **not worth copying structurally**. Journal's information architecture is chronological-stream-first: every entry (a walk, a meal, a flight) sits in one undifferentiated timeline grouped by day. Its "Places" summary is just a count of unique pins — Places is metadata about the journal, not a way to browse it. There is no view in Journal showing "every time I've been to this specific place."
 
-That gap is exactly PlacePick's structural bet (a Place is a persistent entity accumulating Visits over time; the Calendar is one lens onto that, not the primary structure) and is the concrete difference to lean into rather than blur:
+That gap is exactly MomentMap's structural bet (a Place is a persistent entity accumulating Visits over time; the Calendar is one lens onto that, not the primary structure) and is the concrete difference to lean into rather than blur:
 
 - **Revisit history at a Place** (step 7 above) — Journal has no equivalent; you'd have to search and manually assemble it.
 - **Structured per-visit Emotion**, not freeform prose — aggregable (the Calendar's dominant-emotion ring depends on this), unlike Journal's plain text.
@@ -74,4 +74,4 @@ Explicitly decided **not** to chase: Journal's photo-collage/stacking layout (th
 ## Reference apps
 
 - **Day One** — studied for month-grid calendar (photo-first day cells vs. plain dots). Source: user-provided screenshots, 2026-08-06.
-- **Apple Journal** — studied for visual craft and, more importantly, as a foil for PlacePick's Place-centric (vs. chronological-stream) structure. Source: user-provided screenshots, 2026-08-07.
+- **Apple Journal** — studied for visual craft and, more importantly, as a foil for MomentMap's Place-centric (vs. chronological-stream) structure. Source: user-provided screenshots, 2026-08-07.

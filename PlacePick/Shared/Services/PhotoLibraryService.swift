@@ -2,7 +2,7 @@ import SwiftUI
 import Photos
 import PhotosUI
 
-/// Resolves PhotosPicker selections into PhotoImportCandidates. PlacePick is a personal
+/// Resolves PhotosPicker selections into PhotoImportCandidates. MomentMap is a personal
 /// memory layer, not a photo library — image bytes are never copied into app storage.
 /// Only the Photos-library asset identifier is kept; PhotoAssetThumbnailView looks up the
 /// actual image from Photos on demand, through a small bounded cache for scroll
@@ -10,7 +10,7 @@ import PhotosUI
 ///
 /// PHAsset lookup provides capture time/GPS, and is the only source when EXIF is
 /// unavailable (e.g. limited-library edge cases) — it never substitutes for the asset
-/// identifier itself. See DATA_MODEL.md §8.2 "capturedAt": PlacePick must not substitute
+/// identifier itself. See DATA_MODEL.md §8.2 "capturedAt": MomentMap must not substitute
 /// import or current time when reliable capture time is unavailable — items with no
 /// resolvable date from either source are dropped, not defaulted.
 ///

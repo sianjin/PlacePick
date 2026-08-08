@@ -1,14 +1,14 @@
-# PlacePick — IMPLEMENTATION_GUIDE.md
+# MomentMap — IMPLEMENTATION_GUIDE.md
 
 Version: 3.0
 
-Engineering Principles for Implementing PlacePick
+Engineering Principles for Implementing MomentMap
 
 ---
 
 # Mission
 
-This document defines how PlacePick should be implemented.
+This document defines how MomentMap should be implemented.
 
 Product documents define **what** the product is.
 
@@ -166,7 +166,7 @@ Apple Maps owns:
 - Navigation
 - Business metadata
 
-PlacePick owns:
+MomentMap owns:
 
 - Collections
 - Favorites

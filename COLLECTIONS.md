@@ -1,4 +1,4 @@
-# PlacePick — COLLECTIONS.md
+# MomentMap — COLLECTIONS.md
 
 Version: 2.0
 Status: Product Specification
@@ -7,7 +7,7 @@ Status: Product Specification
 
 # Purpose
 
-This document defines the Collection model used by PlacePick.
+This document defines the Collection model used by MomentMap.
 
 Collections are one of the core concepts of the product.
 
@@ -52,9 +52,9 @@ Examples:
 
 Those classifications describe what a Place objectively is.
 
-PlacePick is fundamentally different.
+MomentMap is fundamentally different.
 
-PlacePick does not organize the world.
+MomentMap does not organize the world.
 
 It organizes the user's relationship with the world.
 
@@ -163,7 +163,7 @@ Life is personal.
 
 Collections should therefore also be personal.
 
-For this reason PlacePick intentionally replaces Categories with Collections.
+For this reason MomentMap intentionally replaces Categories with Collections.
 
 ---
 
@@ -225,7 +225,7 @@ without conflict.
 
 Every Place belongs to exactly one Collection.
 
-This is one of the core invariants of PlacePick.
+This is one of the core invariants of MomentMap.
 
 The MVP intentionally does not support assigning one Place to multiple Collections.
 
@@ -266,7 +266,7 @@ The product should never imply that Collections are permanent or fixed.
 
 ## Suggested Collections
 
-When PlacePick is first installed, the app may provide a small set of suggested Collections.
+When MomentMap is first installed, the app may provide a small set of suggested Collections.
 
 Examples include:
 
@@ -370,7 +370,7 @@ The Collection Bar always follows the user's chosen order.
 
 ## No "Other" Collection
 
-PlacePick intentionally does not provide an "Other" Collection.
+MomentMap intentionally does not provide an "Other" Collection.
 
 If a Place does not fit an existing Collection, the correct solution is to create a meaningful new Collection.
 
@@ -421,7 +421,7 @@ or
 Merge into Existing Collection
 ```
 
-PlacePick never decides automatically.
+MomentMap never decides automatically.
 
 The receiver always chooses how the imported Places should fit into their Personal Map.
 
@@ -550,7 +550,7 @@ If an imported Place already exists inside the receiver's Personal Map:
 
 The existing Place always wins.
 
-PlacePick keeps:
+MomentMap keeps:
 
 - existing Collection
 - existing Note
@@ -558,7 +558,7 @@ PlacePick keeps:
 - existing Favorite
 - existing Memory Photo
 
-PlacePick never:
+MomentMap never:
 
 - creates another copy
 - moves the Place
@@ -653,7 +653,7 @@ Only new Places are imported.
 
 # Merge Summary
 
-After import, PlacePick may display a summary.
+After import, MomentMap may display a summary.
 
 Example:
 
@@ -720,9 +720,9 @@ Blue Bottle
 
 Automatically moving Blue Bottle into Japan 2027 would silently rewrite the receiver's Personal Map.
 
-That violates one of PlacePick's core principles.
+That violates one of MomentMap's core principles.
 
-Instead, PlacePick preserves the receiver's existing organization.
+Instead, MomentMap preserves the receiver's existing organization.
 
 Collections represent how the owner thinks.
 
@@ -764,7 +764,7 @@ Organization and rediscovery remain separate concerns.
 
 # Relationship to Apple Maps
 
-Apple Maps and PlacePick have different responsibilities.
+Apple Maps and MomentMap have different responsibilities.
 
 Apple Maps owns objective Place information.
 
@@ -776,7 +776,7 @@ Examples include:
 - Search
 - Navigation
 
-PlacePick owns the user's relationship with Places.
+MomentMap owns the user's relationship with Places.
 
 Examples include:
 
@@ -790,7 +790,7 @@ Apple Maps answers:
 
 > **What is this Place?**
 
-PlacePick answers:
+MomentMap answers:
 
 > **What does this Place mean to me?**
 
@@ -1016,7 +1016,7 @@ Many systems become more flexible by allowing:
 - automatic merging
 - collaborative ownership
 
-PlacePick intentionally avoids these features in the MVP.
+MomentMap intentionally avoids these features in the MVP.
 
 A simpler organizational model is easier to understand, easier to maintain, and produces more predictable behavior.
 

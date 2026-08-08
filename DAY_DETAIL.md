@@ -1,4 +1,4 @@
-# PlacePick — DAY_DETAIL
+# MomentMap — DAY_DETAIL
 
 Version: 1.0
 
@@ -24,7 +24,7 @@ Day Detail does not introduce a new UI.
 
 Instead, it presents Memory Cards in chronological order.
 
-The Memory Card is the fundamental building block of PlacePick.
+The Memory Card is the fundamental building block of MomentMap.
 
 ---
 
@@ -73,7 +73,7 @@ Blue Bottle Coffee
 July 18, 2026 · 9:12 AM
 ```
 
-The same Memory Card is used throughout PlacePick.
+The same Memory Card is used throughout MomentMap.
 
 ---
 

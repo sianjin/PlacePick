@@ -1,4 +1,4 @@
-# PlacePick — MEMORY_CREATION
+# MomentMap — MEMORY_CREATION
 
 Version: 1.0
 
@@ -6,7 +6,7 @@ Version: 1.0
 
 # Purpose
 
-Memory Creation is the primary way to capture experiences in PlacePick.
+Memory Creation is the primary way to capture experiences in MomentMap.
 
 The goal is not to import a photo library.
 

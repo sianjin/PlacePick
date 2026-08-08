@@ -1,10 +1,10 @@
 
-# PlacePick MVP
+# MomentMap MVP
 
 ## Vision
 **Remember life through places.**
 
-PlacePick is a personal memory app organized around real-world places. The product revolves around Places, Memories, and Photos.
+MomentMap is a personal memory app organized around real-world places. The product revolves around Places, Memories, and Photos.
 
 ---
 

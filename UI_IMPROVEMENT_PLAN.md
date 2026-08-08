@@ -1,4 +1,4 @@
-# PlacePick — UI Improvement Plan
+# MomentMap — UI Improvement Plan
 
 Status: Living document
 Version: 2.0
@@ -7,7 +7,7 @@ Version: 2.0
 
 # Goal
 
-The goal is not to make PlacePick look more beautiful.
+The goal is not to make MomentMap look more beautiful.
 
 The goal is to make every interaction reinforce one idea:
 
@@ -54,7 +54,7 @@ Browsing by day should feel like opening a travel journal rather than viewing a 
 
 ## 4. Feelings Over Ratings
 
-PlacePick never asks users to score places.
+MomentMap never asks users to score places.
 
 Instead, it asks:
 
@@ -68,7 +68,7 @@ Emotion should influence the atmosphere of the UI instead of behaving like metad
 
 These are the moments users remember after closing the app.
 
-Without them, PlacePick is simply another well-designed map app.
+Without them, MomentMap is simply another well-designed map app.
 
 ---
 
@@ -406,7 +406,7 @@ Every feature should answer one question:
 
 "Does this make memories more meaningful?"
 
-If not, it doesn't belong in PlacePick.
+If not, it doesn't belong in MomentMap.
 
 ---
 
@@ -416,6 +416,6 @@ Every screen should leave the user's memories feeling more valuable than when th
 
 If a new feature improves functionality but weakens that feeling, it should be reconsidered.
 
-The best version of PlacePick is not the map app with the most features.
+The best version of MomentMap is not the map app with the most features.
 
 It is the map app that makes people smile when they revisit their own lives.

@@ -244,7 +244,7 @@ private struct MemoryRow: View {
         HStack(spacing: 12) {
             // Same emotion-tint ring language as the Calendar's day cells and
             // EmotionPicker's selected state — a visit's feeling should read consistently
-            // wherever it appears, and PlacePick's per-visit Emotion (vs. Day One/Apple
+            // wherever it appears, and MomentMap's per-visit Emotion (vs. Day One/Apple
             // Journal's plain freeform text) is a real structural difference worth making
             // visible here too, not just a tiny inline glyph next to the note.
             PhotoAssetThumbnailView(localAssetIdentifier: coverPhoto?.localAssetIdentifier, fallbackIcon: fallbackIcon)

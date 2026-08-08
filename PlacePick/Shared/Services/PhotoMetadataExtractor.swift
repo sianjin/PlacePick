@@ -6,7 +6,7 @@ import CoreLocation
 /// Reads capture time and GPS directly from image EXIF/GPS metadata, independent of the
 /// Photos library or any PHAsset lookup. Used as the primary metadata source for
 /// Memory Creation so it works purely from PhotosPickerItem-provided data — see
-/// DATA_MODEL.md §8.2 "capturedAt": PlacePick must not substitute import/current time.
+/// DATA_MODEL.md §8.2 "capturedAt": MomentMap must not substitute import/current time.
 enum PhotoMetadataExtractor {
     struct Metadata {
         let capturedAt: Date?

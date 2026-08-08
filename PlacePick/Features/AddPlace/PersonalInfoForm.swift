@@ -79,7 +79,7 @@ struct PersonalInfoForm: View {
     }
 }
 
-/// "A feeling, not a score" is PlacePick's stated differentiator (see App Store copy), so
+/// "A feeling, not a score" is MomentMap's stated differentiator (see App Store copy), so
 /// the selected state needs to read as a considered choice rather than the bare
 /// Text(emoji)+opacity treatment this replaced — a colored ring (PlaceEmotion.tintColor,
 /// the same mapping the Calendar's day-cell emotion tint uses) plus a spring scale-up on

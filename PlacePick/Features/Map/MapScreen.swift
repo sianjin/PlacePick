@@ -181,7 +181,7 @@ struct MapScreen: View {
 
     /// Routes a received PendingImport to the correct entry point. Search-text imports
     /// (external content) converge on AddPlaceScreen per IMPORT_PIPELINE.md "Import
-    /// Boundary". PlacePick-originated Place/Collection shares already carry verified
+    /// Boundary". MomentMap-originated Place/Collection shares already carry verified
     /// identity, so they skip Candidate Resolution entirely — see MVP.md §10 and §11.
     private func handlePendingImport() {
         guard let pendingImport = pendingImportCoordinator.consumePendingImport() else { return }

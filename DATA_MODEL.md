@@ -1,10 +1,10 @@
-# PlacePick Data Model
+# MomentMap Data Model
 
 ## 1. Purpose
 
-This document defines the persistent data model for PlacePick.
+This document defines the persistent data model for MomentMap.
 
-PlacePick is a personal memory system organized through places. The same stored data must support two primary browsing modes:
+MomentMap is a personal memory system organized through places. The same stored data must support two primary browsing modes:
 
 - **Map** — browse memories spatially
 - **Calendar / Timeline** — browse memories temporally
@@ -404,7 +404,7 @@ Example:
 
 ```text
 Visit happened: July 18, 2024
-Imported into PlacePick: July 23, 2026
+Imported into MomentMap: July 23, 2026
 ```
 
 ---
@@ -458,7 +458,7 @@ It may help reconnect to the original asset on the current device, but it must n
 
 - the original Photo may be deleted
 - another device may not expose the same local identifier
-- synchronization may require PlacePick-managed storage
+- synchronization may require MomentMap-managed storage
 
 ### `storedImageReference`
 
@@ -466,13 +466,13 @@ It may help reconnect to the original asset on the current device, but it must n
 storedImageReference: String
 ```
 
-Durable PlacePick-managed image reference.
+Durable MomentMap-managed image reference.
 
 The exact storage mechanism belongs in implementation and sync documentation.
 
 **Not yet implemented — reference-only for MVP, durable copy deferred.** In the current
 implementation this field is always a copy of `localAssetIdentifier`, not an independent
-PlacePick-managed copy. This is a deliberate MVP tradeoff: a real durable copy would add
+MomentMap-managed copy. This is a deliberate MVP tradeoff: a real durable copy would add
 on-device storage growth and new implementation surface for a failure mode (original Photo
 deleted, or viewing on a second device before it syncs) that is real but not yet common
 enough to justify before MVP. Revisit if durability across deletion/multi-device becomes a
@@ -486,7 +486,7 @@ capturedAt: Date
 
 Reliable capture timestamp from Photo metadata.
 
-PlacePick must not silently substitute import time, current time, or file creation time when reliable capture time is unavailable.
+MomentMap must not silently substitute import time, current time, or file creation time when reliable capture time is unavailable.
 
 ### `latitude` and `longitude`
 
@@ -1102,7 +1102,7 @@ modifiedAt
 deletedAt
 ```
 
-PlacePick should use:
+MomentMap should use:
 
 - local-first persistence
 - automatic cloud synchronization when available
@@ -1197,7 +1197,7 @@ Places + Visits
 
 # 26. Summary
 
-The PlacePick model is based on four distinctions:
+The MomentMap model is based on four distinctions:
 
 ```text
 Place = where
@@ -1234,6 +1234,6 @@ User-confirmed Place
 Visit
 ```
 
-This keeps the model accurate, understandable, and extensible while preserving PlacePick's central product idea:
+This keeps the model accurate, understandable, and extensible while preserving MomentMap's central product idea:
 
 > Remember life through places.

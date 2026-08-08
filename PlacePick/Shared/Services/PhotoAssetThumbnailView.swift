@@ -3,7 +3,7 @@ import Photos
 
 /// Resolves a Photos-library asset identifier to a thumbnail, via PHImageManager, backed
 /// by a small bounded cache (PhotoThumbnailCache) for scroll performance. Never stores a
-/// permanent copy — PlacePick is a personal memory layer over the user's own Photos
+/// permanent copy — MomentMap is a personal memory layer over the user's own Photos
 /// library, not a photo container. Falls back to a neutral icon when the identifier is
 /// missing or the asset can no longer be resolved (e.g. deleted from Photos).
 struct PhotoAssetThumbnailView: View {

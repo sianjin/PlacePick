@@ -1,4 +1,4 @@
-# PlacePick — DESIGN_PRINCIPLES.md
+# MomentMap — DESIGN_PRINCIPLES.md
 
 Version: 1.0
 
@@ -8,7 +8,7 @@ Status: Product Philosophy
 
 # Purpose
 
-This document records the enduring design principles behind PlacePick.
+This document records the enduring design principles behind MomentMap.
 
 Unlike implementation documents, these principles are intended to remain stable as the product evolves.
 
@@ -20,7 +20,7 @@ When a design choice conflicts with a principle, the principle should take prece
 
 # Relationship to Other Documents
 
-This document explains **why** PlacePick is designed the way it is.
+This document explains **why** MomentMap is designed the way it is.
 
 Other documents describe the product from different perspectives.
 
@@ -56,7 +56,7 @@ This document explains the principles that keep all of those documents consisten
 
 # Principle 1 — Apple Maps Owns the World
 
-PlacePick does not attempt to recreate the world's geographic information.
+MomentMap does not attempt to recreate the world's geographic information.
 
 Apple Maps already provides:
 
@@ -68,19 +68,19 @@ Apple Maps already provides:
 
 Duplicating these responsibilities would increase complexity without improving the user's experience.
 
-Instead, PlacePick accepts Apple Maps as the authoritative representation of the objective world.
+Instead, MomentMap accepts Apple Maps as the authoritative representation of the objective world.
 
-PlacePick builds on top of that foundation rather than competing with it.
+MomentMap builds on top of that foundation rather than competing with it.
 
 ---
 
-# Principle 2 — PlacePick Owns Personal Meaning
+# Principle 2 — MomentMap Owns Personal Meaning
 
 Apple Maps describes Places.
 
-PlacePick describes the user's relationship with Places.
+MomentMap describes the user's relationship with Places.
 
-PlacePick stores only information that cannot be objectively determined.
+MomentMap stores only information that cannot be objectively determined.
 
 Examples include:
 
@@ -100,7 +100,7 @@ The goal is to build a personal map.
 
 # Principle 3 — Ask Only What the World Cannot Answer
 
-Whenever the objective world already provides an answer, PlacePick should not ask the user to answer it again.
+Whenever the objective world already provides an answer, MomentMap should not ask the user to answer it again.
 
 Examples include:
 
@@ -121,13 +121,13 @@ The ideal creation flow asks only for information that Apple Maps cannot possibl
 
 # Part 1 Summary
 
-PlacePick is built on a clear division of responsibility.
+MomentMap is built on a clear division of responsibility.
 
 Apple Maps owns the objective world.
 
 Users own their personal experiences.
 
-PlacePick exists to connect those two layers without confusing them.
+MomentMap exists to connect those two layers without confusing them.
 
 Every future feature should reinforce this boundary rather than blur it.
 
@@ -135,7 +135,7 @@ Every future feature should reinforce this boundary rather than blur it.
 
 # Product Structure
 
-The structure of PlacePick follows directly from its product philosophy.
+The structure of MomentMap follows directly from its product philosophy.
 
 The application is organized around a small number of independent concepts.
 
@@ -147,7 +147,7 @@ Keeping these responsibilities separate allows the product to remain simple whil
 
 # Principle 4 — One Map, One Workspace
 
-The map is the primary workspace of PlacePick.
+The map is the primary workspace of MomentMap.
 
 Users should feel that they are interacting with one continuous Personal Map rather than navigating between independent screens.
 
@@ -232,7 +232,7 @@ Keeping these concepts independent makes each system easier to understand and ev
 
 # Part 2 Summary
 
-PlacePick is built from a small number of independent concepts.
+MomentMap is built from a small number of independent concepts.
 
 The map provides one continuous workspace.
 
@@ -250,7 +250,7 @@ Each concept has one responsibility, and every responsibility belongs to exactly
 
 # Simplicity
 
-PlacePick values clarity over capability.
+MomentMap values clarity over capability.
 
 Every new feature increases the cognitive cost of using the product.
 
@@ -311,7 +311,7 @@ The Personal Map should accumulate meaning rather than copies.
 
 # Principle 11 — The Product Should Stay Local
 
-PlacePick is intentionally designed around the user's own Places.
+MomentMap is intentionally designed around the user's own Places.
 
 The product does not attempt to become:
 
@@ -372,7 +372,7 @@ Every feature should strengthen the same Personal Map rather than expanding the 
 
 # Evolution
 
-PlacePick is expected to grow over time.
+MomentMap is expected to grow over time.
 
 New features, workflows, and technologies will inevitably be introduced.
 
@@ -438,7 +438,7 @@ Simple systems emerge from clear boundaries.
 
 # Principle 16 — The Product Should Feel Smaller Over Time
 
-As PlacePick grows, it should continue to feel lightweight.
+As MomentMap grows, it should continue to feel lightweight.
 
 New capabilities should increase usefulness without making the product feel more complicated.
 

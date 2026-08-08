@@ -1,4 +1,4 @@
-# PlacePick — MEMORY_DETAIL
+# MomentMap — MEMORY_DETAIL
 
 Version: 1.0
 
@@ -6,7 +6,7 @@ Version: 1.0
 
 # Purpose
 
-Memory Detail is the heart of PlacePick.
+Memory Detail is the heart of MomentMap.
 
 Every browsing path eventually leads here.
 

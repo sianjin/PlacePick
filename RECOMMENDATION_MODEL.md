@@ -1,4 +1,4 @@
-# PlacePick — RECOMMENDATION_MODEL.md
+# MomentMap — RECOMMENDATION_MODEL.md
 
 Version: 4.0
 Status: Attention and Recommendation Specification
@@ -7,7 +7,7 @@ Status: Attention and Recommendation Specification
 
 # Purpose
 
-This document defines how PlacePick decides which saved Places deserve the user's attention.
+This document defines how MomentMap decides which saved Places deserve the user's attention.
 
 Recommendation exists to help users rediscover meaningful Places they have already saved.
 
@@ -161,7 +161,7 @@ A highly important Place is simply one that deserves to be rediscovered sooner.
 
 # Recommendation Is Not Ranking
 
-PlacePick does not rank Places against one another.
+MomentMap does not rank Places against one another.
 
 Importance is absolute.
 

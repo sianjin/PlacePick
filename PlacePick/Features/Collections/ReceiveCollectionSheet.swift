@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 /// Receiving side of Collection sharing. See MVP.md §11.5 "Existing Collection Choice" —
-/// PlacePick never guesses that two Collections are equivalent; the user always chooses
+/// MomentMap never guesses that two Collections are equivalent; the user always chooses
 /// explicitly between creating a new Collection or merging into one they picked themselves.
 struct ReceiveCollectionSheet: View {
     let snapshot: SharedCollectionSnapshot

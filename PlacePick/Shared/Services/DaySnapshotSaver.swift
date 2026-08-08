@@ -4,7 +4,7 @@ import Photos
 /// Saves a rendered Day Detail snapshot to the user's Photos library — the trimmed,
 /// nav-bar-free alternative to a raw iOS screenshot (which always includes the status bar
 /// and can't be avoided; see DayScreenshotPrompt). Reuses the same .readWrite Photos
-/// authorization PlacePick already requests for reading photo metadata.
+/// authorization MomentMap already requests for reading photo metadata.
 enum DaySnapshotSaver {
     enum SaveError: Error {
         case authorizationDenied

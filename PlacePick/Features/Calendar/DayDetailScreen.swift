@@ -190,7 +190,7 @@ private struct DaySnapshotContent: View {
 
 /// Spatial summary of one day's Memories — DATA_MODEL.md §19.4 Daily Travel Log ("render
 /// map, Photos, Emotions, and Notes"). Deliberately shows independent pins with no
-/// connecting route: PlacePick only knows where Photos were taken, not how the user
+/// connecting route: MomentMap only knows where Photos were taken, not how the user
 /// traveled between them, and a drawn route would assert a journey the data can't support
 /// (e.g. missed/unimported photos would silently produce a wrong or incomplete path).
 private struct DayMap: View {
@@ -284,7 +284,7 @@ private struct DayMapPin: View {
     }
 }
 
-/// The fundamental building block of PlacePick, per DAY_DETAIL.md — same card used in
+/// The fundamental building block of MomentMap, per DAY_DETAIL.md — same card used in
 /// Day Detail and (eventually) other Memory-listing surfaces.
 struct MemoryCard: View {
     let visit: Visit

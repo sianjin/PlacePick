@@ -1,4 +1,4 @@
-# PlacePick — IMPORT_PIPELINE.md
+# MomentMap — IMPORT_PIPELINE.md
 
 Version: 2.0
 
@@ -133,7 +133,7 @@ It does not replace user judgment.
 
 # Identity Before Relationship
 
-Import follows the same conceptual model as the rest of PlacePick.
+Import follows the same conceptual model as the rest of MomentMap.
 
 Identity is established first.
 
@@ -773,7 +773,7 @@ The product should remember the Place—not how it entered the Personal Map.
 
 The previous sections define how external content becomes a saved Place.
 
-This section defines the boundaries that keep the import system reliable, predictable, and consistent with the rest of PlacePick.
+This section defines the boundaries that keep the import system reliable, predictable, and consistent with the rest of MomentMap.
 
 Import should accelerate capture without changing the product model.
 
