@@ -10,27 +10,33 @@
   },
   "data": [
     {
-      "filter": "1_Map",
-      "title": {
-        "text": "Browse by place"
-      }
-    },
-    {
-      "filter": "2_Day",
+      "filter": "1_Calendar",
       "title": {
         "text": "One day, every memory"
       }
     },
     {
-      "filter": "3_Place",
+      "filter": "2_Place",
       "title": {
         "text": "One place, many memories"
+      }
+    },
+    {
+      "filter": "3_Map",
+      "title": {
+        "text": "Browse by place"
       }
     },
     {
       "filter": "4_Feeling",
       "title": {
         "text": "A feeling, not a score"
+      }
+    },
+    {
+      "filter": "5_Day",
+      "title": {
+        "text": "Every stop, one page"
       }
     }
   ]
