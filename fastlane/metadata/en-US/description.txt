@@ -1,24 +1,56 @@
 A place is a fact. What happened there is a memory. MomentMap is built for the memory.
 
 TWO WAYS TO HOLD A MEMORY
-A memory has a place and a time, so MomentMap lets you find it either way.
-- Space-first: the Map shows your memories by where they happened.
-- Time-first: the Calendar shows your memories by when they happened, as a day-by-day journal.
-Neither view is the "extra" one. Some memories you'll reach for by place, some by date — MomentMap keeps both equally close.
 
-ONE PLACE, MANY MEMORIES
-The same coffee shop, three visits over two years, are three different memories — not one entry that gets overwritten. Each visit keeps its own photos, its own feeling, its own note, so a place's whole history is there when you open it.
+Every memory has a where and a when. MomentMap keeps both equally close.
 
-ONE DAY, MANY MEMORIES
-Tap a day on the Calendar and see everywhere you went, in order — a map with every stop pinned, and a card for each memory with its place, time, and photos, all on one page.
+Space-first: the Map shows your memories by where they happened.
+Time-first: the Calendar shows your memories by when they happened, as a day-by-day journal.
+
+Neither view is secondary. Some moments you remember by place. Others you remember by date. MomentMap lets you find them the way you remember them.
+
+ONE PLACE, MANY MOMENTS
+
+The same coffee shop, three visits over two years, are three different moments — not one entry that gets overwritten.
+
+Each visit keeps its own photos, feeling, note, and time. Open a place and you don't just see where it is. You see the moments that made it yours.
+
+ONE DAY, MANY MOMENTS
+
+Tap a day on the Calendar to see that day as it happened.
+
+See everywhere you went, in order — a map with every stop pinned, followed by a card for each moment with its place, time, photos, feeling, and note.
+
+It's a journal organized not just by what happened, but by where and when it happened.
 
 A FEELING, NOT A SCORE
-MomentMap never asks "how many stars?" Each memory gets its own feeling instead, because the same place can be unforgettable once and ordinary the next time, and a rating can't hold both — a memory can.
 
-EASY TO SAVE, EASY TO SHARE
-Saving the place itself is the easy part — share a link from Apple Maps, Google Maps, or Yelp, type a name, or let your photos suggest it, and organize it into Collections that make sense to you. Send a place or a whole collection to another MomentMap user just as easily. That's the infrastructure. The memory is the point.
+MomentMap never asks, "How many stars?"
+
+Instead, each moment can have its own feeling. The same restaurant can be unforgettable one night and ordinary the next. A single rating can't hold both. Your memories can.
+
+SAVE PLACES. KEEP MOMENTS.
+
+Not every place needs to be a memory yet.
+
+Save somewhere you want to go. Share a place from Apple Maps, Google Maps, or Yelp, type a name, or let your photos suggest it. Organize places into Collections that make sense to you.
+
+When you go, that place can become something more: a moment with its own time, photos, feeling, and note.
+
+Saving places is the infrastructure. Remembering what happened there is the point.
+
+EASY TO SHARE, PERSONAL BY DEFAULT
+
+Send a place or a whole Collection to another MomentMap user without giving away the memories attached to it.
+
+Your memories stay yours. Sharing a place shares the place — not the personal moments, photos, feelings, or notes that made it meaningful to you.
 
 PRIVATE BY DESIGN
-Your places and memories sync across your own devices with iCloud. No account, no login, no feed. Nothing you save is visible to anyone unless you explicitly share it — and sharing sends only the place, never your personal memories.
 
-MomentMap isn't for finding places. It's for remembering what they meant.
+Your places and memories sync across your own devices with iCloud.
+
+No account. No login. No feed.
+
+Nothing you save is visible to anyone unless you explicitly share it.
+
+MomentMap isn't about finding more places. It's about remembering the moments that made them matter.
