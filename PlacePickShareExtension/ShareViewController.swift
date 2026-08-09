@@ -105,8 +105,14 @@ final class ShareViewController: UIViewController {
     private func complete(with pendingImport: PendingImport) {
         PendingImportStore.save(pendingImport)
 
+        // completeRequest's completion handler isn't statically known to run on the main
+        // actor (it's a plain UIKit callback), but openMainApp() is main-actor-isolated
+        // (inherited from UIViewController) — hop back explicitly rather than relying on
+        // the callback happening to already be on the main thread in practice.
         extensionContext?.completeRequest(returningItems: nil) { [weak self] _ in
-            self?.openMainApp()
+            Task { @MainActor in
+                self?.openMainApp()
+            }
         }
     }
 
